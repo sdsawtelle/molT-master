@@ -54,7 +54,7 @@
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalDependencies>C:\Users\Sonya\Documents\Code\Cpp\molT-master\Master\gpib-32.obj;libmat.lib;libmex.lib;libeng.lib;libmx.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>C:\Users\Sonya\Documents\Code_GitVC\Cpp\molT-master\Master\gpib-32.obj;libmat.lib;libmex.lib;libeng.lib;libmx.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">

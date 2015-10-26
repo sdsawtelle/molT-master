@@ -97,7 +97,6 @@ int K2400::configure(){
 	return 0;
 }
 
-
 void K2400::setParams(){
 
 	int choice;
@@ -174,6 +173,8 @@ void K2400::setParams(){
 	sprintf(integration, ":SENS:CURR:NPLC %i", nplc);
 	GPIBWrite(pna, integration);
 
+	// voltage sensing range - 2V is the next lowest range but some devices do require 2+V
+	GPIBWrite(pna, ":SOUR:VOLT:RANGE 21");
 	// current sensing rangE
 	GPIBWrite(pna, ":SENS:CURR:RANGE 30E-3");
 
@@ -186,82 +187,11 @@ void K2400::setParams(){
 	Sleep(500);
 }
 
-void K2400::setParamsSweep(){
-	int choice;
-	std::cout << ">>>>>>>>>>> Use Default Parameters for Keithley Sweep? ('0' for No, '1' for Yes)\n";
-	std::cin >> choice;
-
-	if (choice){
-		delay = 0;
-		volt_ramp = 0.0005;
-		volt_stop = 4;
-		volt_start = 0.001;
-		//resistance_tolerance = 0.025;
-		//resistance_tolerance_high = 0.06;
-		target_resistance = 600000;
-		//target_resistance_tolerance = 0.001;
-		//volt_down = 0.06;
-		//ntrigger = 2;
-		//ntrigger_high = 6;
-		//nnegres = 2;
-		//nnegres_high = 6;
-		//nplc = 1;
-		//rampdown_dwell = 1;
-		//res_switch = 200;
-	}
-	else{
-		// delay is always set as 0 so hardcode it for now as of 150724
-		//std::cout << "Delay between ramping the voltage? (in seconds)\n";
-		//std::cin >> delay;
-		delay = 0;
-		std::cout << "By how much are we ramping the voltage? (in volts)\n";
-		std::cin >> volt_ramp;
-		std::cout << "What is the stop voltage? \n";
-		std::cin >> volt_stop;
-		std::cout << "At what voltage do we want to start? \n";
-		std::cin >> volt_start;
-		/*std::cout << "What is the tolerance for resistance in low-R regime? Give a percentage in the float format (ex. 20% - 0.2)\n";
-		std::cin >> resistance_tolerance;
-		std::cout << "What is the tolerance for resistance in high-R regime? Give a percentage in the float format (ex. 20% - 0.2)\n";
-		std::cin >> resistance_tolerance_high;*/
-		std::cout << "What is the target resistance? \n";
-		std::cin >> target_resistance;
-		//std::cout << "What is the tolerance for target resistance? Give a percentage in the float format (ex. 20% - 0.2)\n";
-		//std::cin >> target_resistance_tolerance;
-		//// volt_down is not being used as of 150724, hard code some reasonable value to pass
-		////std::cout << "What is the voltage_down? (By how much do we go \" down \" after we reach the change in resistance?) \n";
-		////std::cin >> volt_down;
-		//volt_down = 0.01;
-		//std::cout << "How many consecutive R<R_benchmark hits before triggering a ramp down in low-R regime? \n";
-		//std::cin >> ntrigger;
-		//std::cout << "How many consecutive R<R_benchmark hits before triggering a ramp down in high-R regime? \n";
-		//std::cin >> ntrigger_high;
-		//std::cout << "How many consecutive NDR hits before triggering a ramp down in low-R regime? \n";
-		//std::cin >> nnegres;
-		//std::cout << "How many consecutive NDR hits before triggering a ramp down in high-R regime? \n";
-		//std::cin >> nnegres_high;
-		//// nplc is always being set as 1 so hardcode it for now
-		////std::cout << "What integer number of power line cycles to integrate over for taking current readings? (10 max) \n";
-		////std::cin >> nplc;
-		//nplc = 1;
-		//// volt_down is not being used as of 150724, hard code some reasonable value to pass
-		////std::cout << "How many msec to dwell on each point in the rampdown (rampdown rate will be 1mV/dwell) \n";
-		////std::cin >> rampdown_dwell;
-		//rampdown_dwell = 1;
-		//std::cout << "At what resistance value will we switch to high-R regime? (in ohms) \n";
-		//std::cin >> res_switch;
-	}
-
-
-
-	std::cout << "Please check TempB on Lakeshore and input in Kelvin \n";
-	std::cin >> temperature;
-
-	char integration[30];
-	sprintf(integration, ":SENS:CURR:NPLC %i", nplc);
-	GPIBWrite(pna, integration);
-
-	GPIBWrite(pna, ":SENS:CURR:RANG 100E-6");
+void K2400::initializeEM(){
+	// voltage sensing range - 2V is the next lowest range but some devices do require 2+V
+	GPIBWrite(pna, ":SOUR:VOLT:RANGE 21");
+	// current sensing rangE
+	GPIBWrite(pna, ":SENS:CURR:RANGE 30E-3");
 
 	GPIBWrite(pna, ":SOUR:VOLT 0.0");                    // get the bias to 0
 
@@ -269,6 +199,49 @@ void K2400::setParamsSweep(){
 		printf("GPIB error while turning on sourcemeter\n");
 	}
 	// else printf("Keithley output on! Starting measurement! \n");
+	Sleep(500);
+}
+
+void K2400::setParamsSweep(float* volt_ramp_temp, float* volt_start_temp, float* volt_stop_temp, float* target_resistance_temp){
+	int choice;
+	std::cout << ">>>>>>>>>>> Use Default Parameters for Keithley Sweep? ('0' for No, '1' for Yes)\n";
+	std::cin >> choice;
+
+	if (choice){
+		*volt_ramp_temp = 0.00005;
+		*volt_stop_temp = 2;
+		*volt_start_temp = 0.5;
+		*target_resistance_temp = 600000;
+	}
+	else{
+		std::cout << "By how much are we ramping the voltage? (in volts)\n";
+		std::cin >> *volt_ramp_temp;
+		std::cout << "What is the stop voltage? \n";
+		std::cin >> *volt_stop_temp;
+		std::cout << "At what voltage do we want to start? \n";
+		std::cin >> *volt_start_temp;
+		std::cout << "What is the target resistance? \n";
+		std::cin >> *target_resistance_temp;
+	}
+}
+
+void K2400::initializeSweep(float volt_ramp_temp, float volt_start_temp, float volt_stop_temp, float target_resistance_temp){	
+	
+	volt_ramp_KS = volt_ramp_temp;
+	volt_stop_KS = volt_stop_temp;
+	volt_start_KS = volt_start_temp;
+	target_resistance_KS = target_resistance_temp;
+
+	char integration[30];
+	sprintf(integration, ":SENS:CURR:NPLC %i", nplc);
+	GPIBWrite(pna, integration);
+
+	GPIBWrite(pna, ":SOUR:VOLT:RANGE 1");  // voltage source range to 2V so we can step at 50 uV
+	GPIBWrite(pna, ":SENS:CURR:RANG 100E-6");
+	GPIBWrite(pna, ":SOUR:VOLT 0.0");    // get the bias to 0                
+	if (GPIBWrite(pna, ":OUTP ON")){                   // turn the output ON - if fail, proceed to sending an info on screen
+		printf("GPIB error while turning on sourcemeter\n");
+	}
 	Sleep(500);
 }
 
@@ -365,7 +338,7 @@ float K2400::sweepSingle(int devnum, FILE* outputs[36]){
 	FILE* reading_log_keithley = fopen("log.txt", "r");
 
 	FILE* output = outputs[devnum];
-	fprintf(output, "DELAY (SEC) %.3f ; RAMP (V) %.4f ; MAX VOLT (V) %.2f ; TARGET RESISTANCE (Ohms) %.9f; TEMPERATURE (K) %.4f \n ", delay, volt_ramp, volt_stop, target_resistance, temperature);
+	fprintf(output, "DELAY (SEC) %.3f ; RAMP (V) %.4f ; MAX VOLT (V) %.2f ; TARGET RESISTANCE (Ohms) %.9f; TEMPERATURE (K) %.4f \n ", delay, volt_ramp_KS, volt_stop_KS, target_resistance_KS, temperature);
 	fprintf(output, "voltage,current,resistance \n");
 	fflush(output);
 
@@ -557,7 +530,7 @@ float K2400::DoSweep(FILE* log_keithley, FILE* reading_log_keithley, FILE* outpu
 	resistance_timely = 0;
 	resistance_benchmark = 0;
 	float diffres = 0;
-	float voltage_write = volt_start - volt_ramp; //we omit the point V=0 by increasing the voltage before measurement!
+	float voltage_write = volt_start_KS - volt_ramp_KS; //we omit the point V=0 by increasing the voltage before measurement!
 	float voltage_read = 0;
 	float current_read = 0;
 
@@ -565,8 +538,8 @@ float K2400::DoSweep(FILE* log_keithley, FILE* reading_log_keithley, FILE* outpu
 	sprintf(delays, ":SOUR:DEL %f", delay);
 	int counter = 0; //number of measurements since the most recent ramp_down
 	//execute the code in for loop until we get the required resistance +/- resistance_tol*resistance
-	while (!targ_res_consecutive && voltage_write < volt_stop && !GetAsyncKeyState(VK_F12)){
-		voltage_write += volt_ramp;    //setting new voltage on Keithley
+	while (!targ_res_consecutive && voltage_write < volt_stop_KS && !GetAsyncKeyState(VK_F12)){
+		voltage_write += volt_ramp_KS;    //setting new voltage on Keithley
 		sprintf(buffer, ":SOUR:VOLT %f\n", voltage_write);    //create a new string of a command
 		GPIBWrite(pna, buffer);     //and send it to the source (Keithley)
 		GetReading(buffer, temporary, output, log_keithley); //get what keithley displays and write it to output and log files
@@ -576,7 +549,7 @@ float K2400::DoSweep(FILE* log_keithley, FILE* reading_log_keithley, FILE* outpu
 		resistance_timely = GetResistance(&diffres, voltage_read, current_read, reading_log_keithley, output, counter);
 		std::cout << resistance_timely << " ohms \n";
 		// update the indicator for whether we have a string of consecutive target resistance hits. 
-		if ((resistance_timely > target_resistance*(1 - target_resistance_tolerance)) | (resistance_timely<0)){
+		if ((resistance_timely > target_resistance_KS*(1 - target_resistance_tolerance)) | (resistance_timely<0)){
 			targ_res_consecutive = targ_res_consecutive + 1;
 		}
 		else targ_res_consecutive = 0;
@@ -810,8 +783,6 @@ void K2400::display_parameters(){ // just display all the parameters
 	std::cout << " ========---------------========== " << "\n";
 }
 
-
-
 void K2400::holdGateVoltage(){
 	// sourcing voltage
 	GPIBWrite(pna, ":SOUR:FUNC VOLT");
@@ -861,7 +832,6 @@ void K2400::holdGateVoltage(){
 	GPIBWrite(pna, buffer);     //and send it to the source (Keithley)
 }
 
-
 int K2400::GPIBWrite(int ud, char* cmd){
 	const int bitError = 15;
 	//ibwrt writes to the device. Give it command given by the "cmd"
@@ -876,7 +846,6 @@ int K2400::GPIBWrite(int ud, char* cmd){
 	return 0;
 }
 
-
 int K2400::GPIBRead(int ud, char *message){
 	//ibrd reads from the device.
 	//then take the returned int and go to the 15th bit of it
@@ -890,7 +859,6 @@ int K2400::GPIBRead(int ud, char *message){
 	}
 	return 0;
 }
-
 
 void K2400::SendMail(std::string emailAddress){
 	Spawn(0, emailAddress);

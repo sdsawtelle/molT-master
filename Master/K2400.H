@@ -30,7 +30,9 @@ public:
 	int start();
 	int configure();
 	void setParams();
-	void setParamsSweep();
+	void initializeEM();
+	void setParamsSweep(float* volt_ramp_temp, float* volt_start_temp, float* volt_stop_temp, float* target_resistance_temp);
+	void initializeSweep(float volt_ramp_temp, float volt_start_temp, float volt_stop_temp, float target_resistance_temp);
 	void setParamsDwell();
 	void display_parameters();
 	void measurement(int ifVoltage);
@@ -68,6 +70,12 @@ private:
 	int rampdown_dwell; //dwell time (in msec) for each voltage point in the rampdown - N.B. rampdown occurs in 1mV step so rate is 1mV per rampdown_dwell msec.
 	float res_switch; // resistance at which to switch from using low-R regime parameters to high-R regime parameters
 	float temperature; //temperature reading on lakeshore to record what temp we are breaking wire at
+
+	float volt_ramp_KS; //voltage ramp
+	float volt_start_KS;
+	float volt_stop_KS;  // voltage stop
+	float target_resistance_KS; 
+
 
 
 	int pna;     // this is gonna be our holder of Unique iDentifier
