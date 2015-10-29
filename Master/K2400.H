@@ -29,15 +29,15 @@ public:
 
 	int start();
 	int configure();
-	void setParams();
+	float setParamsEM();
 	void initializeEM();
-	void setParamsSweep(float* volt_ramp_temp, float* volt_start_temp, float* volt_stop_temp, float* target_resistance_temp);
-	void initializeSweep(float volt_ramp_temp, float volt_start_temp, float volt_stop_temp, float target_resistance_temp);
+	void setParamsSweep(int* useEMV);
+	void initializeSweep();
 	void setParamsDwell();
 	void display_parameters();
 	void measurement(int ifVoltage);
 	float emSingle(int devnum, FILE* outputs[36]);
-	float sweepSingle(int devnum, FILE* outputs[36]);
+	float sweepSingle(int devnum, FILE* outputs[36], float Vstart = 0.5);
 	float dwellSingle(int devnum, FILE* outputs[36], float dwellV);
 	int emSingleProbeStation();
 	void holdGateVoltage();

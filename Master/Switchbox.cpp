@@ -200,7 +200,7 @@ void Switchbox::getAllPorts(){
 }
 
 
-void Switchbox::getPorts(int outputfileFlag, FILE* outputs[36]){
+void Switchbox::getPorts(int outputfileFlag, FILE* outputs[36], std::string file_in){
 	// get input file containg pad numbers for devices. 
 	// each device should be its own row in the text file, each pad should be a two digit number
 	// the format is ##,##,##,## where the first two are the source and drain pads, and the next two are the gateline pads
@@ -208,13 +208,15 @@ void Switchbox::getPorts(int outputfileFlag, FILE* outputs[36]){
 
 	//outputfileFlag is 0 if we want output files for each specific device, 1 if we want just a single output file for yield monitoring, and 2 if we don't need any files
 
-	std::string file_in;
-	int fileExists = 0;
-	while (!fileExists){
-		std::cout << "What is the input file containing pad specs of devices to measure?\n";
-		std::cin >> file_in;
-		file_in += ".txt";
-		fileExists = checkFileExists(file_in);
+	if (file_in == "nullstring"){
+		std::string file_in;
+		int fileExists = 0;
+		while (!fileExists){
+			std::cout << "What is the input file containing pad specs of devices to measure?\n";
+			std::cin >> file_in;
+			file_in += ".txt";
+			fileExists = checkFileExists(file_in);
+		}
 	}
 	
 	std::ifstream infile(file_in);

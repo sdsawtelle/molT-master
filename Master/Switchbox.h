@@ -39,7 +39,7 @@ public:
 	void openChanMonitor(int devnum, std::string instrument);
 	void checkChan(int devnum, std::string instrument);
 	void Switchbox::checkAllChan();
-	void getPorts(int outputfileFlag, FILE* outputs[36]);
+	void getPorts(int outputfileFlag, FILE* outputs[36], std::string file_in = "nullstring.txt");
 	void getAllPorts();
 	int checkFileExists(std::string fileName);
 	std::string portSpecs[10][36]; //can read in port specifications for up to 36 devices. the first row are channels to keithley, the second row are channels to SPA.

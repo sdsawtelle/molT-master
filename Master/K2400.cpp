@@ -1,4 +1,6 @@
 #include "K2400.h"
+#include <cmath>
+
 // #include "graph.h"
 #include <iostream>
 #include <windows.h>
@@ -7,7 +9,6 @@
 #include <iomanip>
 #include <sstream>
 #include <math.h> //for floor
-
 // constructor, every instance of k2400 that is created will automatically run configure.
 K2400::K2400(){
 	configure();
@@ -97,7 +98,7 @@ int K2400::configure(){
 	return 0;
 }
 
-void K2400::setParams(){
+float K2400::setParamsEM(){
 
 	int choice;
 	std::cout << ">>>>>>>>>>> Use Default Parameters for EM? ('0' for No, '1' for Yes)\n";
@@ -185,6 +186,8 @@ void K2400::setParams(){
 	}
 	// else printf("Keithley output on! Starting measurement! \n");
 	Sleep(500);
+
+	return temperature;
 }
 
 void K2400::initializeEM(){
@@ -202,36 +205,34 @@ void K2400::initializeEM(){
 	Sleep(500);
 }
 
-void K2400::setParamsSweep(float* volt_ramp_temp, float* volt_start_temp, float* volt_stop_temp, float* target_resistance_temp){
+void K2400::setParamsSweep(int* useEMV){
 	int choice;
 	std::cout << ">>>>>>>>>>> Use Default Parameters for Keithley Sweep? ('0' for No, '1' for Yes)\n";
 	std::cin >> choice;
 
 	if (choice){
-		*volt_ramp_temp = 0.00005;
-		*volt_stop_temp = 2;
-		*volt_start_temp = 0.5;
-		*target_resistance_temp = 600000;
+		volt_ramp_KS = 0.00005;
+		volt_stop_KS = 2;
+		volt_start_KS = 0.5;
+		target_resistance_KS = 280000;
+		*useEMV = 1;
 	}
 	else{
 		std::cout << "By how much are we ramping the voltage? (in volts)\n";
-		std::cin >> *volt_ramp_temp;
-		std::cout << "What is the stop voltage? \n";
-		std::cin >> *volt_stop_temp;
+		std::cin >> volt_ramp_KS;
+		std::cout << "What is the stop voltage (max allowed voltage)? \n";
+		std::cin >> volt_stop_KS;
 		std::cout << "At what voltage do we want to start? \n";
-		std::cin >> *volt_start_temp;
+		std::cin >> volt_start_KS;
 		std::cout << "What is the target resistance? \n";
-		std::cin >> *target_resistance_temp;
+		std::cin >> target_resistance_KS;
+		std::cout << "Would you like to use the exit voltages for EM as the starting KS voltages? ('0' for NO, '1' for YES) \n";
+		std::cin >> *useEMV;
 	}
 }
 
-void K2400::initializeSweep(float volt_ramp_temp, float volt_start_temp, float volt_stop_temp, float target_resistance_temp){	
+void K2400::initializeSweep(){	
 	
-	volt_ramp_KS = volt_ramp_temp;
-	volt_stop_KS = volt_stop_temp;
-	volt_start_KS = volt_start_temp;
-	target_resistance_KS = target_resistance_temp;
-
 	char integration[30];
 	sprintf(integration, ":SENS:CURR:NPLC %i", nplc);
 	GPIBWrite(pna, integration);
@@ -332,7 +333,7 @@ void K2400::setParamsDwell(){
 	Sleep(500);
 }
 
-float K2400::sweepSingle(int devnum, FILE* outputs[36]){
+float K2400::sweepSingle(int devnum, FILE* outputs[36], float Vstart){
 	// want to keep the temp data in the file with other params
 	FILE* log_keithley = fopen("log.txt", "w+");
 	FILE* reading_log_keithley = fopen("log.txt", "r");
@@ -343,6 +344,11 @@ float K2400::sweepSingle(int devnum, FILE* outputs[36]){
 	fflush(output);
 
 	float exitV = 0;
+	
+	// if the user chose to use EM exit voltages then Vstart will have been reassigned to some number that isn't -1
+	if (Vstart != -1){
+		volt_start_KS = Vstart;
+	}
 
 	std::cout << "=======================================================================\n";
 	std::cout << "Press the 'F12' key to interrupt Keithley Sweep...\n";
@@ -528,16 +534,17 @@ float K2400::DoSweep(FILE* log_keithley, FILE* reading_log_keithley, FILE* outpu
 	char buffer[ARRAYSZ] = ""; // size of buffer is given at the beginning
 	int targ_res_consecutive = 0;
 	resistance_timely = 0;
+	float target_resistance_scaled = 0;
 	resistance_benchmark = 0;
 	float diffres = 0;
 	float voltage_write = volt_start_KS - volt_ramp_KS; //we omit the point V=0 by increasing the voltage before measurement!
 	float voltage_read = 0;
 	float current_read = 0;
-
 	char delays[40] = "";
 	sprintf(delays, ":SOUR:DEL %f", delay);
-	int counter = 0; //number of measurements since the most recent ramp_down
-	//execute the code in for loop until we get the required resistance +/- resistance_tol*resistance
+	int counter = 0; //hardcoding counter to 0 and never incrementing it means DON'T do differential resistance, do R = V/I
+
+	//execute the code in for loop until we get the required resistance
 	while (!targ_res_consecutive && voltage_write < volt_stop_KS && !GetAsyncKeyState(VK_F12)){
 		voltage_write += volt_ramp_KS;    //setting new voltage on Keithley
 		sprintf(buffer, ":SOUR:VOLT %f\n", voltage_write);    //create a new string of a command
@@ -547,9 +554,19 @@ float K2400::DoSweep(FILE* log_keithley, FILE* reading_log_keithley, FILE* outpu
 		//compute the resistance on basis of measurement from Keithley. Also writes it to output and log
 		// 140422 (sonya) temporarily try just V/I instead of differential resistance computation - see GetResistance function
 		resistance_timely = GetResistance(&diffres, voltage_read, current_read, reading_log_keithley, output, counter);
-		std::cout << resistance_timely << " ohms \n";
+		std::cout << resistance_timely << " Ohms @ " << voltage_write << " V \n";
+
+		if (voltage_write < 0.2){
+			target_resistance_scaled = target_resistance_KS;
+		}
+		else if (voltage_write > 1.0){
+			target_resistance_scaled = 150000;
+		}
+		else{
+			target_resistance_scaled = 400000 - pow((voltage_write - 0.2), 2) * 312000;
+		}
 		// update the indicator for whether we have a string of consecutive target resistance hits. 
-		if ((resistance_timely > target_resistance_KS*(1 - target_resistance_tolerance)) | (resistance_timely<0)){
+		if ((resistance_timely > target_resistance_scaled*(1 - target_resistance_tolerance)) | (resistance_timely<0)){
 			targ_res_consecutive = targ_res_consecutive + 1;
 		}
 		else targ_res_consecutive = 0;
@@ -794,6 +811,8 @@ void K2400::holdGateVoltage(){
 	GPIBWrite(pna,":SENS:CURR:RANGE:AUTO ON");
 	// Auto ranging seemed to cause exploding of devices.....???
 
+	GPIBWrite(pna, ":SOUR:VOLT:RANGE 21");
+
 	// current protection (compliance) set at 1A
 
 	GPIBWrite(pna, ":SENS:CURR:PROT 1.0");
@@ -829,7 +848,6 @@ void K2400::holdGateVoltage(){
 	// go back to 0 voltage on gateline
 	GPIBWrite(pna, ":SOUR:VOLT 0");
 	GPIBWrite(pna, ":OUTP OFF");
-	GPIBWrite(pna, buffer);     //and send it to the source (Keithley)
 }
 
 int K2400::GPIBWrite(int ud, char* cmd){

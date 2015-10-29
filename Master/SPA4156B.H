@@ -27,8 +27,9 @@ public:
 	SPA4156B();
 	virtual ~SPA4156B();
 	void setParams(int mode); // configure the SPA to do a sweep, sample for self-break of sample for yield depending on which mode is inputted
-	void setGatedIVParamsLater(float* Vstart, float* Vstop, float* Vstep, float* Vstart_gate, float* Vstep_gate, int* Nsteps_gate);
+	void setGatedIVParamsLater(float* Vstart, float* Vstop, float* Vstep, float* Vstart_gate, float* Vstep_gate, float* Vstop_gate);
 	void setSwBrParamsLater(int* useEMVFlag, float* minStart, float* maxStart, float* targetR, float* stepBias, float* stepV);
+	void setIVParamsLater(float* Vstart, float* Vstop, float* Vstep);
 	int sampleSingle(int devnum, FILE* outputs[36], int cycle);
 	int constsampleSingle(int devnum, FILE* outputs[36], int cycle);
 	void yieldSingle(int devnum, FILE* outputs[36]);
@@ -41,8 +42,8 @@ public:
 	void SendMail(std::string emailAddress);
 	void ShowGraph(std::string emailAddress);
 
-	void configGatedSweeps(float Vstart, float Vstop, float Vstep, float Vstart_gate, float Vstep_gate, int Nsteps_gate);
-
+	void configGatedSweeps(float Vstart, float Vstop, float Vstep, float Vstart_gate, float Vstep_gate, float Vstop_gate);
+	void configSweep(float Vstart, float Vstop, float Vstep);
 
 protected:
 private:
@@ -51,7 +52,6 @@ private:
 	int voltageFlag; // a flag that indicates what is the present set value of bias for the SPA
 	int pna;     // this is gonna be our holder of Unique iDentifier
 	void configSample();
-	void configSweep(float Vstart, float Vstop, float Vstep);
 	void configGatedSweepsNoIG(float Vstart, float Vstop, float Vstep, float Vstart_gate, float Vstep_gate, int Nsteps_gate);
 	int GetReading(char* buffer, std::string &temporary, FILE* sb_output);
 	int GetParsedReading(char* buffer, std::string &temporary, FILE* sb_output);

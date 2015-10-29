@@ -117,16 +117,15 @@ void SPA4156B::setParams(int mode){
 				std::cin >> Vstep;
 
 				float Vstart_gate;
-				std::cout << "What is the starting value for biasing the gate? (in V) \n";
-				std::cin >> Vstart_gate;
+				std::cout << "What is the gate voltage to begin biasing the gate at? (in V) \n";				std::cin >> Vstart_gate;
 				float Vstep_gate;
-				std::cout << "What is the voltage step size for biasing the gate? (in V) \n";
+				std::cout << "What is the voltage step size for incrementing the gate voltage? (in V) \n";
 				std::cin >> Vstep_gate;
-				int Nsteps_gate;
-				std::cout << "How many steps do you want the gate bias to increment through (i.e. number of IV sweeps)? (in V) \n";
-				std::cin >> Nsteps_gate;
+				float Vstop_gate;
+				std::cout << "What is the final stopping voltage for biasing the gate? (in V) \n";
+				std::cin >> Vstop_gate;
 
-				configGatedSweeps(Vstart, Vstop, Vstep, Vstart_gate, Vstep_gate, Nsteps_gate);
+				configGatedSweeps(Vstart, Vstop, Vstep, Vstart_gate, Vstep_gate, Vstop_gate);
 				break; }
 		// mode 5 = gated IV's i.e. 3-terminal sweeps but don't record leakage current (uses all SMU1,2 and 3)
 		case 5:{
@@ -145,16 +144,15 @@ void SPA4156B::setParams(int mode){
 				std::cin >> Vstep;
 
 				float Vstart_gate;
-				std::cout << "What is the starting value for biasing the gate? (in V) \n";
-				std::cin >> Vstart_gate;
+				std::cout << "What is the gate voltage to begin biasing the gate at? (in V) \n";				std::cin >> Vstart_gate;
 				float Vstep_gate;
-				std::cout << "What is the voltage step size for biasing the gate? (in V) \n";
+				std::cout << "What is the voltage step size for incrementing the gate voltage? (in V) \n";
 				std::cin >> Vstep_gate;
-				int Nsteps_gate;
-				std::cout << "How many steps do you want the gate bias to increment through (i.e. number of IV sweeps)?\n";
-				std::cin >> Nsteps_gate;
+				float Vstop_gate;
+				std::cout << "What is the final stopping voltage for biasing the gate? (in V) \n";
+				std::cin >> Vstop_gate;
 
-				configGatedSweepsNoIG(Vstart, Vstop, Vstep, Vstart_gate, Vstep_gate, Nsteps_gate);
+				configGatedSweepsNoIG(Vstart, Vstop, Vstep, Vstart_gate, Vstep_gate, Vstop_gate);
 				break; }
 
 		default:
@@ -164,7 +162,7 @@ void SPA4156B::setParams(int mode){
 
 }
 
-void SPA4156B::setGatedIVParamsLater(float* Vstart, float* Vstop, float* Vstep, float* Vstart_gate, float* Vstep_gate, int* Nsteps_gate){
+void SPA4156B::setGatedIVParamsLater(float* Vstart, float* Vstop, float* Vstep, float* Vstart_gate, float* Vstep_gate, float* Vstop_gate){
 			   
 	int choice;
 	std::cout << ">>>>>>>>>>> Use Default Parameters for Gated IV? ('0' for No, '1' for Yes)\n";
@@ -176,7 +174,36 @@ void SPA4156B::setGatedIVParamsLater(float* Vstart, float* Vstop, float* Vstep, 
 		*Vstep = 0.01;
 		*Vstart_gate = -4.0;
 		*Vstep_gate = 4.0;
-		*Nsteps_gate = 3;
+		*Vstop_gate = 2;
+	}
+	else{
+		std::cout << "What is the starting Vds sweep value for Ids measurement? (in V) \n";
+		std::cin >> *Vstart;
+		std::cout << "What is the stopping Vds sweep value for Ids measurement? (in V) \n";
+		std::cin >> *Vstop;
+		std::cout << "What is the Vds step size for Ids measurement? (in V) \n";
+		std::cin >> *Vstep;
+
+		std::cout << "What is the gate voltage to begin biasing the gate at? (in V) \n";
+		std::cin >> *Vstart_gate;
+		std::cout << "What is the voltage step size for incrementing the gate voltage? (in V) \n";
+		std::cin >> *Vstep_gate;
+		std::cout << "What is the final stopping voltage for biasing the gate? (in V) \n";
+		std::cin >> *Vstop_gate;
+	}
+
+}
+
+void SPA4156B::setIVParamsLater(float* Vstart, float* Vstop, float* Vstep){
+
+	int choice;
+	std::cout << ">>>>>>>>>>> Use Default Parameters for IV? ('0' for No, '1' for Yes)\n";
+	std::cin >> choice;
+
+	if (choice){
+		*Vstart = -0.24;
+		*Vstop = 0.24;
+		*Vstep = 0.002;
 	}
 	else{
 		std::cout << "What is the starting sweep value for Ids measurement? (in V) \n";
@@ -185,13 +212,6 @@ void SPA4156B::setGatedIVParamsLater(float* Vstart, float* Vstop, float* Vstep, 
 		std::cin >> *Vstop;
 		std::cout << "What is the voltage step size for Ids measurement? (in V) \n";
 		std::cin >> *Vstep;
-
-		std::cout << "What is the starting value for biasing the gate? (in V) \n";
-		std::cin >> *Vstart_gate;
-		std::cout << "What is the voltage step size for biasing the gate? (in V) \n";
-		std::cin >> *Vstep_gate;
-		std::cout << "How many steps do you want the gate bias to increment through (i.e. number of IV sweeps)? (in V) \n";
-		std::cin >> *Nsteps_gate;
 	}
 
 }
@@ -353,7 +373,7 @@ void SPA4156B::configSweep(float Vstart, float Vstop, float Vstep){
 
 	}
 
-void SPA4156B::configGatedSweeps(float Vstart, float Vstop, float Vstep, float Vstart_gate, float Vstep_gate, int Nsteps_gate){
+void SPA4156B::configGatedSweeps(float Vstart, float Vstop, float Vstep, float Vstart_gate, float Vstep_gate, float Vstop_gate){
 	
 	// For subordinate sweep measurement, you set up a secondary sweep source(VAR2)
 	// in addition to a primary sweep source(VAR1).After primary sweep is completed,
@@ -437,6 +457,8 @@ void SPA4156B::configGatedSweeps(float Vstart, float Vstop, float Vstep, float V
 	sprintf(stepping_gate, ":PAGE:MEAS:VAR2:STEP %f", Vstep_gate);
 	GPIBWrite(pna, stepping_gate);
 
+	int Nsteps_gate = floor(abs((Vstop_gate - Vstart_gate) / Vstep_gate));
+	std::cout << "Number of steps for the gate voltage is " << Nsteps_gate << "\n";
 	char steps[60];
 	sprintf(steps, ":PAGE:MEAS:VAR2:POINTS %i", Nsteps_gate);
 	GPIBWrite(pna, steps);

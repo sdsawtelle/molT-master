@@ -39,7 +39,7 @@ private:
 	void executeIETS(K2400 keithley, Switchbox switchbox, FILE* outputs[36], bool gateFlag);
 	void holdGateVoltage(K2400 keithley, Switchbox switchbox, FILE* outputs[36], int devnum);
 	void executeSweepBreakAndSelfBreak_PS(SPA4145B SPA_probeStation, FILE* output);
-	void executeEMandKeithleySweep(SPA4156B SPA, Switchbox switchbox, K2400 keithley);
+	void executeEMandKeithleySweepandIV(SPA4156B SPA, Switchbox switchbox, K2400 keithley);
 	void closeFiles(int ymflag, int ndev, FILE* outputs[36], Switchbox switchbox);
 };
 
