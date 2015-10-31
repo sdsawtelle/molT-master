@@ -317,6 +317,10 @@ void menu::executeKeithleySweep(K2400 keithley, SPA4156B SPA, Switchbox switchbo
 	std::cout << "Please check TempB on Lakeshore and input in Kelvin \n";
 	std::cin >> temperature;
 
+	float temp_vstart;
+	std::cout << "TEMPORARY FIX: What is starting sweep voltage (in V)? \n";
+	std::cin >> temp_vstart;
+
 	// get a filename and open a file that will be used to write the summary info to
 	std::string file_summary;
 	std::cout << "What is the filename stem to use for the KeithleySweep Outcome Summary? \n";
@@ -348,7 +352,7 @@ void menu::executeKeithleySweep(K2400 keithley, SPA4156B SPA, Switchbox switchbo
 		if (switchbox.portSpecs[4][devnum] == "y"){
 			switchbox.closeChan(devnum, "keithley"); // all channels except DUT remain shorted to bias port, DUT is connected to relevant inputs
 			t0 = Clock::now();
-			switchbox.exitSummary[0][devnum] = keithley.sweepSingle(devnum, outputs); // writes IV data to output file. keithley will set his output to 0V after finishing EM run
+			switchbox.exitSummary[0][devnum] = keithley.sweepSingle(devnum, outputs, temp_vstart); // writes IV data to output file. keithley will set his output to 0V after finishing EM run
 			t1 = Clock::now();
 			Elapsed = std::chrono::duration_cast<minutes>(t1 - t0);
 			std::cout << "Device ID# " << switchbox.portSpecs[3][devnum].c_str() << " has completed active EM! \n";

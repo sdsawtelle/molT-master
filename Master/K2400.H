@@ -37,7 +37,7 @@ public:
 	void display_parameters();
 	void measurement(int ifVoltage);
 	float emSingle(int devnum, FILE* outputs[36]);
-	float sweepSingle(int devnum, FILE* outputs[36], float Vstart = 0.5);
+	float sweepSingle(int devnum, FILE* outputs[36], float Vstart = -1.0);
 	float dwellSingle(int devnum, FILE* outputs[36], float dwellV);
 	int emSingleProbeStation();
 	void holdGateVoltage();

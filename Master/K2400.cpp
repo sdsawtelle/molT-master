@@ -19,7 +19,6 @@ K2400::~K2400(){
 	//dtor
 }
 
-
 int K2400::configure(){
 
 	int ERROR1 = 0; // error information. if any problem happens, this variable will go to 1;
@@ -59,6 +58,7 @@ int K2400::configure(){
 	// Auto ranging seemed to cause exploding of devices.....???
 	// Failing to auto range may be giving us really fucking weird measurements from keithley
 
+	nplc = 1;
 
 	// current protection (compliance) set at 1A
 	GPIBWrite(pna, ":SENS:CURR:PROT 1.0");
@@ -109,14 +109,14 @@ float K2400::setParamsEM(){
 		volt_ramp = 0.001;
 		volt_stop = 4;
 		volt_start = 0.001;
-		resistance_tolerance = 0.025;
+		resistance_tolerance = 0.03;
 		resistance_tolerance_high = 0.06;
 		target_resistance = 10000;
 		target_resistance_tolerance = 0.001;
 		volt_down = 0.06;
-		ntrigger = 2;
+		ntrigger = 3;
 		ntrigger_high = 6;
-		nnegres = 2;
+		nnegres = 3;
 		nnegres_high = 6;
 		nplc = 1;
 		rampdown_dwell = 1;
@@ -237,12 +237,12 @@ void K2400::initializeSweep(){
 	sprintf(integration, ":SENS:CURR:NPLC %i", nplc);
 	GPIBWrite(pna, integration);
 
-	GPIBWrite(pna, ":SOUR:VOLT:RANGE 1");  // voltage source range to 2V so we can step at 50 uV
-	GPIBWrite(pna, ":SENS:CURR:RANG 100E-6");
-	GPIBWrite(pna, ":SOUR:VOLT 0.0");    // get the bias to 0                
+	GPIBWrite(pna, ":SOUR:VOLT:RANG 1");  // voltage source range to 2V so we can step at 50 uV
+	GPIBWrite(pna, ":SENS:CURR:RANG 1E-3");  
 	if (GPIBWrite(pna, ":OUTP ON")){                   // turn the output ON - if fail, proceed to sending an info on screen
 		printf("GPIB error while turning on sourcemeter\n");
 	}
+	GPIBWrite(pna, ":SOUR:VOLT 0.0");    // get the bias to 0  
 	Sleep(500);
 }
 
@@ -346,7 +346,7 @@ float K2400::sweepSingle(int devnum, FILE* outputs[36], float Vstart){
 	float exitV = 0;
 	
 	// if the user chose to use EM exit voltages then Vstart will have been reassigned to some number that isn't -1
-	if (Vstart != -1){
+	if (Vstart != -1.0){
 		volt_start_KS = Vstart;
 	}
 
@@ -535,7 +535,14 @@ float K2400::DoSweep(FILE* log_keithley, FILE* reading_log_keithley, FILE* outpu
 	int targ_res_consecutive = 0;
 	resistance_timely = 0;
 	float target_resistance_scaled = 0;
-	resistance_benchmark = 0;
+
+	// parameters for the resistance target model
+	float R_max = 150000;
+	float beta = 1;
+
+	float storevoltage = 0;
+	float resistance_lowbias = 0;
+
 	float diffres = 0;
 	float voltage_write = volt_start_KS - volt_ramp_KS; //we omit the point V=0 by increasing the voltage before measurement!
 	float voltage_read = 0;
@@ -554,20 +561,48 @@ float K2400::DoSweep(FILE* log_keithley, FILE* reading_log_keithley, FILE* outpu
 		//compute the resistance on basis of measurement from Keithley. Also writes it to output and log
 		// 140422 (sonya) temporarily try just V/I instead of differential resistance computation - see GetResistance function
 		resistance_timely = GetResistance(&diffres, voltage_read, current_read, reading_log_keithley, output, counter);
-		std::cout << resistance_timely << " Ohms @ " << voltage_write << " V \n";
+		std::cout << resistance_timely << " Ohms @ " << voltage_write << " V - ";
 
-		if (voltage_write < 0.2){
-			target_resistance_scaled = target_resistance_KS;
+		if (voltage_write < 0.1){
+			target_resistance_scaled = 650000;
 		}
-		else if (voltage_write > 1.0){
-			target_resistance_scaled = 150000;
+		else if (voltage_write >= 0.1 && voltage_write <= 0.2){
+			target_resistance_scaled = 650000 - (voltage_write - 0.1) * 2500000*beta;
+		}
+		else if (voltage_write > 0.2 && voltage_write <= 0.7){
+			float Rlowend = 650000 - (0.1) * 2500000 * beta;
+			float Rhighend = 700000-650000*beta;
+			target_resistance_scaled = Rlowend - (voltage_write - 0.2)*(Rlowend - Rhighend) / 0.5;
+			//target_resistance_scaled = 400000 - pow((voltage_write - 0.2), 2) * alpha;
 		}
 		else{
-			target_resistance_scaled = 400000 - pow((voltage_write - 0.2), 2) * 312000;
+			
+			target_resistance_scaled = 700000 - 550000 * beta;
+			//target_resistance_scaled = R_max + (880000-alpha)/8;
 		}
+		
+		std::cout << " beta is " << beta << " and R_target is " << target_resistance_scaled << " ohms\n";
+
 		// update the indicator for whether we have a string of consecutive target resistance hits. 
-		if ((resistance_timely > target_resistance_scaled*(1 - target_resistance_tolerance)) | (resistance_timely<0)){
-			targ_res_consecutive = targ_res_consecutive + 1;
+		if ((resistance_timely > target_resistance_scaled) | (resistance_timely < 0)){
+			
+			// sample at 200mV to check actual resistance
+			storevoltage = voltage_write;
+			GPIBWrite(pna, ":SOUR:VOLT 0.1\n");     //and send it to the source (Keithley)
+			GetReading(buffer, temporary, output, log_keithley); //get what keithley displays and write it to output and log files
+			resistance_lowbias = GetResistance(&diffres, voltage_read, current_read, reading_log_keithley, output, counter);
+
+			// based on 200mV sample decide whether it is finished, or whether to move up to more aggressive algorithm
+			if ((resistance_lowbias > 650000) || (beta == 0)){
+				targ_res_consecutive = targ_res_consecutive + 1;
+				voltage_write = storevoltage;
+			}
+			else{
+				beta -= 0.05;
+				std::cout << "\n\n Switching to more aggressive algorithm with alpha = " << beta << "\n\n\n";
+				voltage_write = storevoltage;
+			}
+			
 		}
 		else targ_res_consecutive = 0;
 	}

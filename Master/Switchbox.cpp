@@ -208,8 +208,7 @@ void Switchbox::getPorts(int outputfileFlag, FILE* outputs[36], std::string file
 
 	//outputfileFlag is 0 if we want output files for each specific device, 1 if we want just a single output file for yield monitoring, and 2 if we don't need any files
 
-	if (file_in == "nullstring"){
-		std::string file_in;
+	if (file_in == "nullstring.txt"){
 		int fileExists = 0;
 		while (!fileExists){
 			std::cout << "What is the input file containing pad specs of devices to measure?\n";
