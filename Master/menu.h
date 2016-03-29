@@ -21,10 +21,18 @@ public:
 protected:
 private:
 	void executeEM(K2400 keithley, SPA4156B SPA, Switchbox switchbox, FILE* outputs[36]);
+	void executeStabilizeEM(K2400 keithley, SPA4156B SPA, Switchbox switchbox, FILE* outputs[36]);
+	void executeCurvatureEM(K2400 keithley, SPA4156B SPA, Switchbox switchbox, FILE* outputs[36]);
+	void executeHEAL(K2400 keithley, SPA4156B SPA, Switchbox switchbox, FILE* outputs[36]);
+	void keithleyDEP(K2400 keithley, Switchbox switchbox, FILE* outputs[36]);
+	void executeEM_ProbeStation(K2400 keithley, FILE* outputs[36]);
 	void executeKeithleySweep(K2400 keithley, SPA4156B SPA, Switchbox switchbox, FILE* outputs[36]);
+	void executeKeithleyPulse(K2400 keithley, SPA4156B SPA, Switchbox switchbox, FILE* outputs[36]);
 	void executeKeithleyDwell(K2400 keithley, SPA4156B SPA, Switchbox switchbox, FILE* outputs[36]);
 	void executeEMandMonitor(K2400 keithley, SPA4156B SPA, Switchbox switchbox, FILE* outputs[36]);
 	void executeMonitor(SPA4156B SPA, Switchbox switchbox, FILE* outputs[36]);
+	void executeGatedMonitor(SPA4156B SPA, K2400 keithley, Switchbox switchbox, FILE* outputs[36]);
+	void executeProteinCaptureMonitor(SPA4156B SPA, Switchbox switchbox, K2400 keithley, FILE* outputs[36]);
 	void executeSweep(SPA4156B SPA, Switchbox switchbox, FILE* outputs[36]);
 	void executeLeakageSweep(SPA4156B SPA, Switchbox switchbox, FILE* outputs[36]);
 	void executeSweepBreak(SPA4156B SPA, Switchbox switchbox, FILE* outputs[36]);
@@ -40,6 +48,8 @@ private:
 	void holdGateVoltage(K2400 keithley, Switchbox switchbox, FILE* outputs[36], int devnum);
 	void executeSweepBreakAndSelfBreak_PS(SPA4145B SPA_probeStation, FILE* output);
 	void executeEMandKeithleySweepandIV(SPA4156B SPA, Switchbox switchbox, K2400 keithley);
+	void executeEMandIV(SPA4156B SPA, Switchbox switchbox, K2400 keithley);
+	void executeEMandHeal(SPA4156B SPA, Switchbox switchbox, K2400 keithley);
 	void closeFiles(int ymflag, int ndev, FILE* outputs[36], Switchbox switchbox);
 };
 

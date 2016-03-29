@@ -72,11 +72,12 @@ void SPA4156B::setParams(int mode){
 	switch (mode){
 		 // mode = 1 for sampling (uses SMU1 and SMU2)
 		case 1:{
+			float voltage;
 			std::cout << "What is the wait time between sampling? (in seconds) \n";
 			std::cin >> wait_time;
-			std::cout << "We will use the following voltage values depending on resistance: \n";
-			std::cout << "1mV, 10mV, 100mV \n";
-			configSample();
+			std::cout << "What is the voltage to sample at (in V)? \n";
+			std::cin >> voltage;
+			configSample(voltage);
 			break;}
 
 		// mode 2 = sweeping IVs (uses SMU1 and SMU2) 
@@ -96,7 +97,7 @@ void SPA4156B::setParams(int mode){
 		// mode 3 = nanowire and gateline yield monitoring (uses SMU1 and SMU2)
 		case 3:{
 			std::cout << "We will use a voltage value of 1mV for sampling yield. \n";
-			configSample();
+			configSample(0.001);
 			break; }
 
 
@@ -144,7 +145,8 @@ void SPA4156B::setParams(int mode){
 				std::cin >> Vstep;
 
 				float Vstart_gate;
-				std::cout << "What is the gate voltage to begin biasing the gate at? (in V) \n";				std::cin >> Vstart_gate;
+				std::cout << "What is the gate voltage to begin biasing the gate at? (in V) \n";				
+				std::cin >> Vstart_gate;
 				float Vstep_gate;
 				std::cout << "What is the voltage step size for incrementing the gate voltage? (in V) \n";
 				std::cin >> Vstep_gate;
@@ -244,7 +246,7 @@ void SPA4156B::setSwBrParamsLater(int* useEMVFlag, float* minStart, float* maxSt
 
 }
 
-void SPA4156B::configSample(){
+void SPA4156B::configSample(float voltage){
 
 	// initialize portVoltages for the monitoring functions
 	for (int i = 0; i < 36; i++){
@@ -256,66 +258,86 @@ void SPA4156B::configSample(){
 
 	//This command deletes the settings of all units (SMU,VSU,VMU,PGU,GNDU).
 	GPIBWrite(pna, ":PAGE:CHAN:ALL:DIS");
-
+	Sleep(200);
 	//These commands set the INAME (current) and VNAME (voltage) of SMU<n>
 	GPIBWrite(pna, ":PAGE:CHAN:SMU1:VNAME 'V1'");
+	Sleep(200);
 	GPIBWrite(pna, ":PAGE:CHAN:SMU1:INAME 'I1'");
+	Sleep(200);
 	GPIBWrite(pna, ":PAGE:CHAN:SMU2:VNAME 'V2'");
+	Sleep(200);
 	GPIBWrite(pna, ":PAGE:CHAN:SMU2:INAME 'I2'");
-
+	Sleep(200);
 	//This command sets the sb_output MODE of SMU<n>. (V  Voltage sb_output mode)(COMMon  Common)
 	GPIBWrite(pna, ":PAGE:CHAN:SMU1:MODE V");
+	Sleep(200);
 	GPIBWrite(pna, ":PAGE:CHAN:SMU2:MODE COMM");
-
+	Sleep(200);
 	//This command sets the function(FCTN) of SMU<n>. (CONStant  Constant) (VAR1  VAR1 function(available for sweep and QSCV))
 	GPIBWrite(pna, ":PAGE:CHAN:SMU1:FUNC CONS");
+	Sleep(200);
 	GPIBWrite(pna, ":PAGE:CHAN:SMU2:FUNC CONS");
-
+	Sleep(200);
 	// This command sets the MEASUREMENT MODE
 	GPIBWrite(pna, ":PAGE:CHAN:MODE SAMP");
+	Sleep(200);
+	Sleep(100);
 
 	//This command sets the value of 'LONG' integration, then selects LONG as the the INTEGRATION TIME mode.
-	GPIBWrite(pna, ":PAGE:MEAS:MSET:ITIM:LONG 2");
+	GPIBWrite(pna, ":PAGE:MEAS:MSET:ITIM:LONG 6");
+	Sleep(200);
 	GPIBWrite(pna, ":PAGE:MEAS:MSET:ITIM LONG");
-
+	Sleep(200);
 	//This command selects the ranging MODE of SMU<n>
 	GPIBWrite(pna, ":PAGE:MEAS:MSET:SMU1:RANG:MODE AUTO");
-
+	Sleep(200);
+	Sleep(200);
+	
 	// This command selects the sb_output sequence mode for sampling measurement. You use this command only if the measurement mode is sampling. "SIM" means all source unit starts sb_output at same timing. 
 	GPIBWrite(pna, ":PAGE:MEAS:OSEQ:MODE SIM");
-
+	Sleep(200);
 	//This command changes the present display page to MEASURE : SAMPLING SETUP page
 	GPIBWrite(pna, ":PAGE:MEAS:SAMP");
-
+	Sleep(200);
 	//This command sets the MODE for sampling measurement. The sampling mode determines the sampling interval.
 	GPIBWrite(pna, ":PAGE:MEAS:SAMP:MODE LIN");
-
+	Sleep(200);
 	// This command sets the constant SOURCE value of SMU<n> for the sampling measurement. The mode of the specified SMU must be V or I.
-	GPIBWrite(pna, ":PAGE:MEAS:SAMP:CONS:SMU1 0.001");
+	char samplevoltage[60];
+	sprintf(samplevoltage, ":PAGE:MEAS:SAMP:CONS:SMU1 %f", voltage);
+	GPIBWrite(pna, samplevoltage);
 	voltageFlag = 1;
+	Sleep(200);
 
 	// This command sets the INITIAL INTERVAL for sampling measurement(in seconds)
 	GPIBWrite(pna, ":PAGE:MEAS:SAMP:IINT 0.002");
-
+	Sleep(200);
 	// This command sets the HOLD TIME of sampling measurement.This is the wait time between turning on the 'sb_outputs' and taking the first sampling point measurement. Min is 30ms
 	GPIBWrite(pna, ":PAGE:MEAS:SAMP:HTIM 0.005");
-
+	Sleep(200);
 	// This command sets the TOTAL SAMPLING TIME for sampling measurement (in seconds). Auto (disables total sampling time stop event, and enables the number of samples stop event.)
 	GPIBWrite(pna, ":PAGE:MEAS:SAMP:PER:AUTO ON");
-
+	Sleep(200);
 	// This command sets the NUMBER OF SAMPLES for sampling measurement.
 	GPIBWrite(pna, ":PAGE:MEAS:SAMP:POIN 1");
-
+	Sleep(200);
 	//GPIBWrite(pna, "*WAI");
-	Sleep(1000);
+	Sleep(200);
 	
 }
 
 void SPA4156B::constconfigSample(){
+	//This command sets the value of 'LONG' integration, then selects LONG as the the INTEGRATION TIME mode.
+	GPIBWrite(pna, ":PAGE:MEAS:MSET:ITIM:LONG 6");
+	Sleep(200);
+	GPIBWrite(pna, ":PAGE:MEAS:MSET:ITIM LONG");
+	Sleep(200);
 	// This command sets the INITIAL INTERVAL for sampling measurement(in seconds)
 	GPIBWrite(pna, ":PAGE:MEAS:SAMP:IINT 0.002");
+	Sleep(200);
 	// This command sets the NUMBER OF SAMPLES for sampling measurement.
-	GPIBWrite(pna, ":PAGE:MEAS:SAMP:POIN 10");
+	GPIBWrite(pna, ":PAGE:MEAS:SAMP:POIN 500");
+	Sleep(200);
 }
 
 void SPA4156B::configSweep(float Vstart, float Vstop, float Vstep){
@@ -457,7 +479,7 @@ void SPA4156B::configGatedSweeps(float Vstart, float Vstop, float Vstep, float V
 	sprintf(stepping_gate, ":PAGE:MEAS:VAR2:STEP %f", Vstep_gate);
 	GPIBWrite(pna, stepping_gate);
 
-	int Nsteps_gate = floor(abs((Vstop_gate - Vstart_gate) / Vstep_gate));
+	int Nsteps_gate = floor(abs((Vstop_gate - Vstart_gate) / Vstep_gate))+1;
 	std::cout << "Number of steps for the gate voltage is " << Nsteps_gate << "\n";
 	char steps[60];
 	sprintf(steps, ":PAGE:MEAS:VAR2:POINTS %i", Nsteps_gate);
@@ -468,7 +490,7 @@ void SPA4156B::configGatedSweeps(float Vstart, float Vstop, float Vstep, float V
 	GPIBWrite(pna, ":PAGE:DISP:LIST 'V1','I1','V3','I3'"); // add specified variables to list
 }
 
-void SPA4156B::configGatedSweepsNoIG(float Vstart, float Vstop, float Vstep, float Vstart_gate, float Vstep_gate, int Nsteps_gate){
+void SPA4156B::configGatedSweepsNoIG(float Vstart, float Vstop, float Vstep, float Vstart_gate, float Vstep_gate, float Vstop_gate){
 
 	// For subordinate sweep measurement, you set up a secondary sweep source(VAR2)
 	// in addition to a primary sweep source(VAR1).After primary sweep is completed,
@@ -552,6 +574,8 @@ void SPA4156B::configGatedSweepsNoIG(float Vstart, float Vstop, float Vstep, flo
 	sprintf(stepping_gate, ":PAGE:MEAS:VAR2:STEP %f", Vstep_gate);
 	GPIBWrite(pna, stepping_gate);
 
+	int Nsteps_gate = floor(abs((Vstop_gate - Vstart_gate) / Vstep_gate)) + 1;
+	std::cout << "Number of steps for the gate voltage is " << Nsteps_gate << "\n";
 	char steps[60];
 	sprintf(steps, ":PAGE:MEAS:VAR2:POINTS %i", Nsteps_gate);
 	GPIBWrite(pna, steps);
@@ -611,10 +635,10 @@ int SPA4156B::sampleSingle(int devnum, FILE* outputs[36], int cycle){
 	std::cout << "current for device # "<< devnum << " is " << current << "\n";
 
 	int deadFlag = 0;
-	if (current < 0.000000005){
-		std::cout << "Device # " << devnum << " is dead - removing from group.\n";
-		deadFlag = 1;
-	}
+	//if (current < 0.000000005){
+	//	std::cout << "Device # " << devnum << " is dead - removing from group.\n";
+	//	deadFlag = 1;
+	//}
 
 	return deadFlag;
 
@@ -628,13 +652,13 @@ int SPA4156B::sampleSingle(int devnum, FILE* outputs[36], int cycle){
 	//}
 }
 
-int SPA4156B::constsampleSingle(int devnum, FILE* outputs[36], int cycle){
+int SPA4156B::constsampleSingle(int devnum, FILE* outputs[36], int cycle, float Rdead, float voltage){
 	FILE* sb_output = outputs[devnum]; // set the output file stream to the current device we are working on
 	// fprintf(sb_output, "Voltage (V), Current (A) \n");
 	// fflush(sb_output);
 
 	std::string temporary = "";
-	char buffer[1000] = ""; // makes this larger if you increase sample points to hold a huge data dump after e.g. 5000 sample points
+	char buffer[500000] = ""; // makes this larger if you increase sample points to hold a huge data dump after e.g. 5000 sample points
 
 	//150427 removing this functionality as even at 250 kohms we should still read nA at 1mV
 	// check whether we need to switch to a different bias voltage for this device and then do so, modifying voltageFlag as needed
@@ -653,22 +677,47 @@ int SPA4156B::constsampleSingle(int devnum, FILE* outputs[36], int cycle){
 		}
 	}*/
 
-	//execute a single measurement
-	GPIBWrite(pna, ":PAGE:SCON:MEAS:SING;");// execute the measurement then wait until instrument returns an 'IDLE' status such that measurement is complete
-	
-	// add this back if we are pulling a large number of sampling points in one measurement - with 10 points there is no need
+	// POLLLING METHOD 1 - COULDN'T GET THIS WORKING
+	//ibtmo(pna, 17); //set the GPIB read timeout to 1000 seconds
+	////execute a single measurement
+	//GPIBWrite(pna, ":PAGE:SCON:MEAS:SING; *OPC?;");// execute the measurement then wait until instrument returns an 'IDLE' status such that measurement is complete
+	//
+
+	// POLLLING METHOD 2 - COULDN'T GET THIS WORKING
+	//ibtmo(pna, 17);
+	//Sleep(1000);
+	//GPIBWrite(pna, "*CLS;");
+	//Sleep(1000);
+	//GPIBWrite(pna, ":PAGE:SCON:MEAS:SING;");
+	//Sleep(1000);
+	//GPIBWrite(pna, "*OPC;");
+	//int measureFlag = 1;
+	//while (measureFlag){
+	//	Sleep(1000);
+	//	GPIBWrite(pna, "*ESR?");
+	//	Sleep(1000);
+	//	GPIBRead(pna, buffer);
+	//	std::cout << "buffer is " << buffer << "\n";
+	//	if (buffer[1] == '1'){
+	//		measureFlag = 0;
+	//	}
+	//}
+
+	// POLLLING METHOD 3 - SEEMS TO WORK....
+	GPIBWrite(pna, ":PAGE:SCON:MEAS:SING");
 	int measureFlag = 1;
 	while (measureFlag){
-		Sleep(5);
+		Sleep(200);
 		GPIBWrite(pna, "PAGE:SCON:STAT?");
 		GPIBRead(pna, buffer);
+		//std::cout << buffer << "\n.";
 		if (buffer[0] == 'I'){
 			measureFlag = 0;
 		}
 	}
 
 	// get the sampling output and write to file
-	GetParsedReading(buffer, temporary, sb_output);
+	GetParsedSampleReading(buffer, temporary, sb_output);
 
 	// now we assess whether the device is low, medium or high resistance, and modify the array that stores voltages to be used for each device
 	// N.B. the intial value of portVoltages[i] is 1 and devices don't typically decrease in resistance, so not checking for that.
@@ -676,7 +725,7 @@ int SPA4156B::constsampleSingle(int devnum, FILE* outputs[36], int cycle){
 	int pos = currstring.find_last_of(",");      // position of the last "," in the list of 1000 current readings
 	std::string curr = currstring.substr(pos + 1);
 	float current = strtof(buffer, NULL);
-	std::cout << "current is " << current << "\n";
+	std::cout << "Current is " << current << " A.\n";
 	//if ((current < 0.000000001) && (current > 0.0000000001)){
 	//	portVoltages[devnum] = 2;
 	//}
@@ -685,7 +734,7 @@ int SPA4156B::constsampleSingle(int devnum, FILE* outputs[36], int cycle){
 	//}
 
 	int deadFlag = 0;
-	if (current < 0.000000005){
+	if (current < voltage/Rdead){
 		std::cout << "Device # " << devnum << " is dead - removing from group.\n";
 		deadFlag = 1;
 	}
@@ -850,10 +899,10 @@ void SPA4156B::yieldSingle(int devnum, FILE* outputs[36]){
 
 	// the first measurements are always weird
 	GPIBWrite(pna, ":PAGE:SCON:MEAS:SING;");
-	Sleep(500);
+	Sleep(2000);
 	//execute a single measurement (this will use the default bias of 1mV)
 	GPIBWrite(pna, ":PAGE:SCON:MEAS:SING;");
-	Sleep(500);
+	Sleep(2000);
 	GetYieldReading(buffer, temporary, sb_output);
 }
 
@@ -862,12 +911,12 @@ float SPA4156B::yieldGapSingle(){
 	std::string temporary = "";
 	char buffer[ARRAYSZ] = ""; // size of buffer is given at the beginning
 
-	configSample(); // reset to sampling mode 
+	configSample(0.001); // reset to sampling mode 
 	GPIBWrite(pna, ":PAGE:MEAS:SAMP:CONS:SMU1 0.1"); 	// change to using a sampling bias of 100mV
 	GPIBWrite(pna, ":PAGE:SCON:MEAS:SING;"); // the first measurements are always weird, throw it out
-	Sleep(700); // wait a while (11 PLC) in case it is high R and integrates for a long time
+	Sleep(2000); // wait a while (> 100 PLC) in case it is high R and integrates for a long time
 	GPIBWrite(pna, ":PAGE:SCON:MEAS:SING;"); //execute a single measurement
-	Sleep(700);
+	Sleep(2000);
 
 	sprintf(buffer, "");
 
@@ -893,6 +942,50 @@ float SPA4156B::yieldGapSingle(){
 	return resistance;
 }
 
+float SPA4156B::healSingle(float Vsample, FILE* output){
+
+	// NOTE: this function expects SPA to already be in sampling mode w/ parameters defined by configSample()
+
+	std::string temporary = "";
+	char buffer[ARRAYSZ] = ""; // size of buffer is given at the beginning
+ 
+	sprintf(buffer, ":PAGE:MEAS:SAMP:CONS:SMU1 %f", Vsample);
+	GPIBWrite(pna, buffer); 	// change to using the input sampling bias
+	GPIBWrite(pna, ":PAGE:SCON:MEAS:SING;"); // the first measurements are always weird, throw it out
+	Sleep(700); // wait a while (11 PLC) in case it is high R and integrates for a long time
+	GPIBWrite(pna, ":PAGE:SCON:MEAS:SING;"); // the first measurements are always weird, throw it out
+	Sleep(700); // wait a while (11 PLC) in case it is high R and integrates for a long time
+
+	sprintf(buffer, "");
+
+	GPIBWrite(pna, ":DATA? 'V1'");
+	ibwait(pna, CMPL);
+	GPIBRead(pna, buffer);
+	ibwait(pna, CMPL);
+	fprintf(output, "%s, ", buffer);
+	fflush(output);
+	float voltage;
+	std::istringstream in(buffer);
+	in >> voltage;
+
+	GPIBWrite(pna, ":DATA? 'I1'");
+	ibwait(pna, CMPL);
+	GPIBRead(pna, buffer);
+	ibwait(pna, CMPL);
+	fprintf(output, "%s\n", buffer);
+	fflush(output);
+	float current;
+	std::istringstream in2(buffer);
+	in2 >> current;
+
+	float resistance = voltage / current;
+	//std::cout << resistance << " ohms. \n";
+
+	fprintf(output, "%s\n", buffer);
+	fflush(output);
+
+	return resistance;
+}
 
 // ---------------------------------------------------------------------------------------------------------
 // --------------------------------------- READING AND WRITING FUNCTIONS -----------------------------------
@@ -953,7 +1046,7 @@ int SPA4156B::GetParsedReading(char* buffer, std::string &temporary, FILE* sb_ou
 	//create the duplicate log.txt for plotting
 	FILE* plotlog = fopen("log.txt", "w+");
 
-	GPIBWrite(pna, ":DATA? 'V1'");
+	GPIBWrite(pna, ":DATA? 'V1';");
 	ibwait(pna, CMPL);
 	GPIBRead(pna, buffer);
 	ibwait(pna, CMPL);
@@ -961,15 +1054,13 @@ int SPA4156B::GetParsedReading(char* buffer, std::string &temporary, FILE* sb_ou
 	std::string input = buffer;
 	std::istringstream ss(input);
 	
-
-	GPIBWrite(pna, ":DATA? 'I1'");
+	GPIBWrite(pna, ":DATA? 'I1';");
 	ibwait(pna, CMPL);
 	GPIBRead(pna, buffer);
 	ibwait(pna, CMPL);
 
 	std::string input2 = buffer;
 	std::istringstream ss2(input2);
-
 
 	std::string token;
 	std::string token2;
@@ -979,6 +1070,12 @@ int SPA4156B::GetParsedReading(char* buffer, std::string &temporary, FILE* sb_ou
 	while (std::getline(ss, token, ',')) {
 		// if it's the last parsed data point of the list then get rid of the end-of-line to avoid weirdness in the text file output
 		// N.B. spa will assert <data></n><^EOI> where EOI is it's default end of transmission character
+
+		/*std::cout << "This is token contents: " << token << " and this is token.size " << token.size() << ".\n";
+		std::cout << "This is token[token.size()] " << token[token.size()] << ".\n";
+		std::cout << "This is token[token.size()-1] " << token[token.size()-1] << ".\n";
+		std::cout << "This is token[token.size()-2] " << token[token.size() - 2] << ".\n";
+*/
 		if (!token.empty() && token[token.size() - 2] == '\n'){
 			token.erase(token.size() - 2, 2);
 		}
@@ -988,11 +1085,13 @@ int SPA4156B::GetParsedReading(char* buffer, std::string &temporary, FILE* sb_ou
 		fflush(sb_output);
 		fflush(plotlog);
 
+		// Get the current data value and parse it
 		std::getline(ss2, token2, ',');
 		// if it's the last parsed data point of the list then get rid of the end-of-line to avoid weirdness in the text file output
 		if (!token2.empty() && token2[token2.size() - 2] == '\n'){
 			token2.erase(token2.size() - 2, 2);
 		}
+
 		sprintf(buffer, "%s\n", token2.c_str());
 		fprintf(sb_output, buffer);
 		fprintf(plotlog, buffer);
@@ -1001,7 +1100,71 @@ int SPA4156B::GetParsedReading(char* buffer, std::string &temporary, FILE* sb_ou
 	}
 
 	fclose(plotlog);
+	return 0;
+}
 
+int SPA4156B::GetParsedSampleReading(char* buffer, std::string &temporary, FILE* sb_output){
+
+	sprintf(buffer, "");
+
+	//create the duplicate log.txt for plotting
+	FILE* plotlog = fopen("log.txt", "w+");
+
+	GPIBWrite(pna, ":DATA? 'V1';");
+	ibwait(pna, CMPL);
+	GPIBRead(pna, buffer);
+	ibwait(pna, CMPL);
+
+	std::string input = buffer;
+	std::istringstream ss(input);
+
+	GPIBWrite(pna, ":DATA? 'I1';");
+	ibwait(pna, CMPL);
+	GPIBRead(pna, buffer);
+	ibwait(pna, CMPL);
+
+	std::string input2 = buffer;
+	std::istringstream ss2(input2);
+
+	std::string token;
+	std::string token2;
+
+	// 160319 - Modified this to correctly deal with \n and EOI at end of data dumps. 
+	// this loop with sequentially pull out (and write to text file) the individual values of voltage and current from the 
+	// comma-separated list that was dumped into buffers above
+	while (std::getline(ss, token, ',')) {
+		// if it's the last parsed data point of the list then get rid of the end-of-line to avoid weirdness in the text file output
+		// N.B. FOR SAMPLEING DATA spa will assert <data><\n><^EOI> where EOI is it's default end of transmission character
+		/*std::cout << "This is token contents: " << token << " and this is token.size " << token.size() << ".\n";
+		std::cout << "This is token[token.size()] " << token[token.size()] << ".\n";
+		std::cout << "This is token[token.size()-1] " << token[token.size()-1] << ".\n";
+		std::cout << "This is token[token.size()-2] " << token[token.size() - 2] << ".\n";*/
+
+		if (!token.empty() && token[token.size() - 1] == '\n'){
+			token.erase(token.size() - 1, 2);
+		}
+
+		sprintf(buffer, "%s, ", token.c_str());
+		fprintf(sb_output, buffer);
+		fprintf(plotlog, buffer);
+		fflush(sb_output);
+		fflush(plotlog);
+
+		// Get the current data value and parse it
+		std::getline(ss2, token2, ',');
+		// if it's the last parsed data point of the list then get rid of the end-of-line to avoid weirdness in the text file output
+		if (!token2.empty() && token2[token2.size() - 1] == '\n'){
+			token2.erase(token2.size() - 1, 2);
+		}
+
+		sprintf(buffer, "%s\n", token2.c_str());
+		fprintf(sb_output, buffer);
+		fprintf(plotlog, buffer);
+		fflush(sb_output);
+		fflush(plotlog);
+	}
+
+	fclose(plotlog);
 	return 0;
 }
 

@@ -44,7 +44,9 @@ int K2400::configure(){
 	}
 
 	//Now we will initialize the sourcemeters
-	printf("initializing K2400 sourcemeter parameters\n");
+	//printf("initializing K2400 sourcemeter parameters\n");
+	// sourcing voltage
+	GPIBWrite(pna, "*RST");
 	// sourcing voltage
 	GPIBWrite(pna, ":SOUR:FUNC VOLT");
 	// sensing mode DC current
@@ -96,105 +98,174 @@ int K2400::configure(){
 	}
 	else printf("Initialization of Keithley 2400 was successful.\n");
 	return 0;
+
 }
 
-float K2400::setParamsEM(){
+float K2400::setParamsEM(int emType){
 
-	int choice;
-	std::cout << ">>>>>>>>>>> Use Default Parameters for EM? ('0' for No, '1' for Yes)\n";
-	std::cin >> choice;
+	if (emType == 0 | emType == 1){
+		int choice;
+		std::cout << ">>>>>>>>>>> Use Default Parameters for EM? ('0' for No, '1' for Yes)\n";
+		std::cin >> choice;
 
-	if (choice){
-		delay = 0;
-		volt_ramp = 0.001;
-		volt_stop = 4;
-		volt_start = 0.001;
-		resistance_tolerance = 0.03;
-		resistance_tolerance_high = 0.06;
-		target_resistance = 10000;
-		target_resistance_tolerance = 0.001;
-		volt_down = 0.06;
-		ntrigger = 3;
-		ntrigger_high = 6;
-		nnegres = 3;
-		nnegres_high = 6;
-		nplc = 1;
-		rampdown_dwell = 1;
-		res_switch = 200;
+		if (choice){
+			delay = 0;
+			volt_ramp = 0.001;
+			volt_stop = 5;
+			volt_start = 0.15;
+			//target_resistance = 10000;
+			std::cout << "What is the target resistance? \n";
+			std::cin >> target_resistance;
+			target_resistance_tolerance = 0.001;
+			nplc = 1;
+			rampdown_dwell = 1;
+			//res_switch = 350;
+			//resistance_tolerance = 0.02;
+			//nnegres = 2;
+			//ntrigger = 2;
+
+			float resistance_tolerance_defaults[4] = { 0.03, 0.04, 0.06, 10000000.00 };
+			float res_switch_defaults[4] = { 75, 200, 400, 1000000 };
+			float ntrigger_defaults[4] = { 3, 4, 6, 100000 };
+			float nnegres_defaults[4] = { 3, 4, 6, 10000000 };
+
+			for (int j = 0; j < 4; j++){
+
+				res_switch[j] = res_switch_defaults[j];
+				resistance_tolerance[j] = resistance_tolerance_defaults[j];
+				ntrigger[j] = ntrigger_defaults[j];
+				nnegres[j] = nnegres_defaults[j];
+			}
+
+		}
+		else{
+			// delay is always set as 0 so hardcode it for now as of 150724
+			//std::cout << "Delay between ramping the voltage? (in seconds)\n";
+			//std::cin >> delay;
+			delay = 0;
+			std::cout << "By how much are we ramping the voltage? (in volts)\n";
+			std::cin >> volt_ramp;
+			std::cout << "What is the stop voltage? \n";
+			std::cin >> volt_stop;
+			std::cout << "At what voltage do we want to start? \n";
+			std::cin >> volt_start;
+			std::cout << "What is the target resistance? \n";
+			std::cin >> target_resistance;
+			std::cout << "What is the tolerance for target resistance? Give a percentage in the float format (ex. 20% - 0.2)\n";
+			std::cin >> target_resistance_tolerance;
+			nplc = 1;
+			// volt_down is not being used as of 150724, hard code some reasonable value to pass
+			//std::cout << "How many msec to dwell on each point in the rampdown (rampdown rate will be 1mV/dwell) \n";
+			//std::cin >> rampdown_dwell;
+			rampdown_dwell = 1;
+
+			std::string RegimeNames[4] = { "LOW", "LOWER MIDDLE", "UPPER MIDDLE", "HIGH" };
+			for (int j = 0; j < 4; j++){
+				std::cout << "\n\n*****Set parameters for the " << RegimeNames[j] << " Regime*****\n";
+				if (j < 3){
+					std::cout << "At what R_jct will we leave this regime (in ohms)?\n";
+					std::cin >> res_switch[j];
+				}
+				std::cout << "What is the % resistance change? Give a percentage in the float format (ex. 20% - 0.2)\n";
+				std::cin >> resistance_tolerance[j];
+				std::cout << "What is the number of consecutive % resistance changes?\n";
+				std::cin >> ntrigger[j];
+				std::cout << "What is number of consecutive NDRs?\n";
+				std::cin >> nnegres[j];
+				std::cout << "\n";
+			}
+
+		}
+
+		// adding this in in the hopes that it fixes the bizarre problem of the EM algorithm writing four columns of data...
+		configure();
+
+		std::cout << "Please check TempB on Lakeshore and input in Kelvin \n";
+		std::cin >> temperature;
+
+		char integration[30];
+		sprintf(integration, ":SENS:CURR:NPLC %i", nplc);
+		GPIBWrite(pna, integration);
+
+		volt_down = 0.2;
+
+		// voltage sensing range - 2V is the next lowest range but some devices do require 2+V
+		GPIBWrite(pna, ":SOUR:VOLT:RANGE 21");
+		// current sensing rangE
+		GPIBWrite(pna, ":SENS:CURR:RANGE 30E-3");
+
+		GPIBWrite(pna, ":SOUR:VOLT 0.0");                    // get the bias to 0
+
+		if (GPIBWrite(pna, ":OUTP ON")){                   // turn the output ON - if fail, proceed to sending an info on screen
+			printf("GPIB error while turning on sourcemeter\n");
+		}
+		// else printf("Keithley output on! Starting measurement! \n");
+		Sleep(500);
 	}
-	else{
-		// delay is always set as 0 so hardcode it for now as of 150724
-		//std::cout << "Delay between ramping the voltage? (in seconds)\n";
-		//std::cin >> delay;
-		delay = 0;
+	if (emType == 2){
 		std::cout << "By how much are we ramping the voltage? (in volts)\n";
 		std::cin >> volt_ramp;
 		std::cout << "What is the stop voltage? \n";
 		std::cin >> volt_stop;
 		std::cout << "At what voltage do we want to start? \n";
 		std::cin >> volt_start;
-		std::cout << "What is the tolerance for resistance in low-R regime? Give a percentage in the float format (ex. 20% - 0.2)\n";
-		std::cin >> resistance_tolerance;
-		std::cout << "What is the tolerance for resistance in high-R regime? Give a percentage in the float format (ex. 20% - 0.2)\n";
-		std::cin >> resistance_tolerance_high;
 		std::cout << "What is the target resistance? \n";
 		std::cin >> target_resistance;
+		std::cout << "(NOTE: exit condition is target R _or_ 2000 data points at the dwell voltage.)\n";
 		std::cout << "What is the tolerance for target resistance? Give a percentage in the float format (ex. 20% - 0.2)\n";
 		std::cin >> target_resistance_tolerance;
-		// volt_down is not being used as of 150724, hard code some reasonable value to pass
-		//std::cout << "What is the voltage_down? (By how much do we go \" down \" after we reach the change in resistance?) \n";
-		//std::cin >> volt_down;
-		volt_down = 0.01;
-		std::cout << "How many consecutive R<R_benchmark hits before triggering a ramp down in low-R regime? \n";
-		std::cin >> ntrigger;
-		std::cout << "How many consecutive R<R_benchmark hits before triggering a ramp down in high-R regime? \n";
-		std::cin >> ntrigger_high;
-		std::cout << "How many consecutive NDR hits before triggering a ramp down in low-R regime? \n";
-		std::cin >> nnegres;
-		std::cout << "How many consecutive NDR hits before triggering a ramp down in high-R regime? \n";
-		std::cin >> nnegres_high;
-		// nplc is always being set as 1 so hardcode it for now
-		//std::cout << "What integer number of power line cycles to integrate over for taking current readings? (10 max) \n";
-		//std::cin >> nplc;
-		nplc = 1;
-		// volt_down is not being used as of 150724, hard code some reasonable value to pass
-		//std::cout << "How many msec to dwell on each point in the rampdown (rampdown rate will be 1mV/dwell) \n";
-		//std::cin >> rampdown_dwell;
-		rampdown_dwell = 1;
-		std::cout << "At what resistance value will we switch to high-R regime? (in ohms) \n";
-		std::cin >> res_switch;
+
+		// decide what will be the triggers for indicating EM onset and indicating rapid EM needing a ramp back
+		std::cout << "What is the percentage resistance difference that will prevent voltage incrementing (float format)?\n";
+		std::cin >> rampup_thresh;
+		std::cout << "What is the percentage resistance difference that will trigger dwelling voltage (float format)?\n";
+		std::cin >> rampback_thresh;
 	}
-
-
-
-	std::cout << "Please check TempB on Lakeshore and input in Kelvin \n";
-	std::cin >> temperature;
-
-	char integration[30];
-	sprintf(integration, ":SENS:CURR:NPLC %i", nplc);
-	GPIBWrite(pna, integration);
-
-	// voltage sensing range - 2V is the next lowest range but some devices do require 2+V
-	GPIBWrite(pna, ":SOUR:VOLT:RANGE 21");
-	// current sensing rangE
-	GPIBWrite(pna, ":SENS:CURR:RANGE 30E-3");
-
-	GPIBWrite(pna, ":SOUR:VOLT 0.0");                    // get the bias to 0
-
-	if (GPIBWrite(pna, ":OUTP ON")){                   // turn the output ON - if fail, proceed to sending an info on screen
-		printf("GPIB error while turning on sourcemeter\n");
-	}
-	// else printf("Keithley output on! Starting measurement! \n");
-	Sleep(500);
 
 	return temperature;
 }
 
-void K2400::initializeEM(){
-	// voltage sensing range - 2V is the next lowest range but some devices do require 2+V
+float K2400::setParamsPulse(){
+	// auto-zero and auto-range off b/c they increase pulse time
+	GPIBWrite(pna, ":SYS:AZER:STAT OFF");
 	GPIBWrite(pna, ":SOUR:VOLT:RANGE 21");
-	// current sensing rangE
-	GPIBWrite(pna, ":SENS:CURR:RANGE 30E-3");
+	GPIBWrite(pna, ":SENS:FUNC:CONC OFF");
+	GPIBWrite(pna, ":SOUR:VOLT:RANGE:AUTO OFF");
+	GPIBWrite(pna, ":SENS:CURR:RANGE:AUTO OFF");
+	GPIBWrite(pna, ":SENS:FUNC:OFF ALL");
+	// custom voltage sweep mode and set the number of points in the sweep 
+	GPIBWrite(pna, ":SOUR:VOLT:MODE LIST");
+	GPIBWrite(pna, ":TRIG:COUN 2");
+	// adjust trigger & source delay to achieve minimum pulse time
+	GPIBWrite(pna, ":TRIG:DEL 0.0");
+	GPIBWrite(pna, ":SOUR:DEL 0.0");
+	GPIBWrite(pna, ":OUTP ON");
+	return 0;
+}
+
+float K2400::pulseSingle(float voltage){
+	// set voltage values for the pulse
+	char volts[30];
+	sprintf(volts, ":SOUR:LIST:VOLT %f,0", voltage);
+	GPIBWrite(pna, volts);
+	// trigger a single sweep
+	GPIBWrite(pna, ":INIT");
+	return 0;
+}
+
+void K2400::initializeEM(int emType){
+	if (emType == 0){ //normal EM
+		GPIBWrite(pna, ":SOUR:VOLT:RANGE 21"); // voltage sensing range - 2V is the next lowest range but some devices do require 2+V
+		GPIBWrite(pna, ":SENS:CURR:RANGE 30E-3");
+	}
+	if (emType == 1){ //stabilize EM
+		GPIBWrite(pna, ":SOUR:VOLT:RANGE 2");
+		GPIBWrite(pna, ":SENS:CURR:RANGE 30e-3");
+	}
+	if (emType == 2){ //curvature EM
+		GPIBWrite(pna, ":SOUR:VOLT:RANGE 2");
+		GPIBWrite(pna, ":SENS:CURR:RANGE 30E-3");
+	}
 
 	GPIBWrite(pna, ":SOUR:VOLT 0.0");                    // get the bias to 0
 
@@ -211,10 +282,10 @@ void K2400::setParamsSweep(int* useEMV){
 	std::cin >> choice;
 
 	if (choice){
-		volt_ramp_KS = 0.00005;
+		volt_ramp_KS = 0.0001;
 		volt_stop_KS = 2;
-		volt_start_KS = 0.5;
-		target_resistance_KS = 280000;
+		volt_start_KS = 0.7;
+		target_resistance_KS = 325000;
 		*useEMV = 1;
 	}
 	else{
@@ -224,7 +295,7 @@ void K2400::setParamsSweep(int* useEMV){
 		std::cin >> volt_stop_KS;
 		std::cout << "At what voltage do we want to start? \n";
 		std::cin >> volt_start_KS;
-		std::cout << "What is the target resistance? \n";
+		std::cout << "What is the target resistance at 100 mV? \n";
 		std::cin >> target_resistance_KS;
 		std::cout << "Would you like to use the exit voltages for EM as the starting KS voltages? ('0' for NO, '1' for YES) \n";
 		std::cin >> *useEMV;
@@ -392,7 +463,51 @@ float K2400::dwellSingle(int devnum, FILE* outputs[36], float dwellV){
 	return exitV;
 }
 
-float K2400::emSingle(int devnum, FILE* outputs[36]){
+float K2400::emSingle(int devnum, FILE* outputs[36], int emType, float Vstab){
+	// want to keep the temp data in the file with other params
+	FILE* log_keithley = fopen("log.txt", "w+");
+	FILE* reading_log_keithley = fopen("log.txt", "r");
+
+	FILE* output = outputs[devnum];
+	fprintf(output, "DELAY (SEC) %.3f ; RAMP (V) %.4f ; MAX VOLT (V) %.2f ; RAMP RESISTANCE TOLERANCE (low R) (float %%) %.3f ; RAMP RESISTANCE TOLERANCE (low-med R) (float %%) %.3f ; RAMP RESISTANCE TOLERANCE (med-high R) (float %%) %.3f ; RAMP RESISTANCE TOLERANCE (high R) (float %%) %.3f ; TARGET RESISTANCE (Ohms) %.9f ; TARGET RESISTANCE TOLERANCE (float %%) %.3f ; RAMP DOWN (V) %.3f ; NUM CONSEC % HITS (low R) %i ; NUM CONSEC % HITS (low-med R) %i ;  NUM CONSEC % HITS (med-high R) %i ; NUM CONSEC % HITS (high R) %i ; NUM CONSEC NDR (low R) %i ; NUM CONSEC % HITS (low-med R) %i ; NUM CONSEC % HITS (med-high R) %i ; NUM CONSEC NDR (high R) %i ; LOW/LOW-MED SWITCH RESISTANCE (ohms) %.9f ; LOW-MED/MED-HIGH SWITCH RESISTANCE (ohms) %.9f ; MED-HIGH/HIGH SWITCH RESISTANCE (ohms) %.9f ;  INTEGRATION TIME (PLC) %i ; RAMPDOWN DWELL (msec/mV) %.4i ; TEMPERATURE (K) %.4f \n ", delay, volt_ramp, volt_stop, resistance_tolerance[0], resistance_tolerance[1], resistance_tolerance[2], resistance_tolerance[3], target_resistance, target_resistance_tolerance, volt_down, ntrigger[0], ntrigger[1], ntrigger[2], ntrigger[3], nnegres[0], nnegres[1], nnegres[2], nnegres[3], res_switch[0], res_switch[1], res_switch[2], nplc, rampdown_dwell, temperature);
+	fprintf(output, "voltage,current,resistance \n");
+	fflush(output);
+
+	float exitV = 0;
+
+	std::cout << "=======================================================================\n";
+	std::cout << "Press the 'F12' key to interrupt active EM...\n";
+	std::cout << "=======================================================================\n";
+
+	if (emType == 0){ // normal EM
+		exitV = DoMeasurement(log_keithley, reading_log_keithley, output, delay); //Here the real measurement is done. See comments within the function
+	}
+	if (emType == 1){ // EM followed by stabilization monitoring
+		float stabstep;
+		std::cout << "By how much should we increment the stabilizing voltage (in Volts)?\n (SAY '0' FOR PURE STABILIZATION MEASUREMENTS)\n";
+		std::cin >> stabstep;
+		exitV = DoStabilizeMeasurement(log_keithley, reading_log_keithley, output, delay, Vstab, stabstep); //Here the real measurement is done. See comments within the function
+	}
+	if (emType == 2){ // EM designed to pull out dR/dt exactly at EM onset
+		exitV = DoCurvatureMeasurement(log_keithley, reading_log_keithley, output, delay); //Here the real measurement is done. See comments within the function
+	}
+
+	GPIBWrite(pna, ":SOUR:VOLT 0.0"); // set output back to 0 V in preparation for closing channel to next device to be EM'd
+	//GPIBWrite(pna, ":OUTP OFF");
+	//close the streams
+	fclose(log_keithley);
+	fclose(reading_log_keithley);
+	// fclose(output); leave it open for now, since might monitor self-breaking. The closeFiles function in menu.h will take care of it
+
+	//send mail!
+	// SendMail();
+	//show graph
+	// ShowGraph();
+
+	return exitV;
+}
+
+float K2400::healSingle(int devnum, FILE* outputs[36]){
 	// want to keep the temp data in the file with other params
 	FILE* log_keithley = fopen("log.txt", "w+");
 	FILE* reading_log_keithley = fopen("log.txt", "r");
@@ -404,11 +519,14 @@ float K2400::emSingle(int devnum, FILE* outputs[36]){
 
 	float exitV = 0;
 
+	// current sensing range in auto
+	GPIBWrite(pna, ":SENS:CURR:RANGE:AUTO ON");
+
 	std::cout << "=======================================================================\n";
-	std::cout << "Press the 'F12' key to interrupt active EM...\n";
+	std::cout << "Press the 'F12' key to interrupt HEALING...\n";
 	std::cout << "=======================================================================\n";
 
-	exitV = DoMeasurement(log_keithley, reading_log_keithley, output, delay); //Here the real measurement is done. See comments within the function
+	exitV = DoHeal(log_keithley, reading_log_keithley, output, delay); //Here the real measurement is done. See comments within the function
 
 	GPIBWrite(pna, ":SOUR:VOLT 0.0"); // set output back to 0 V in preparation for closing channel to next device to be EM'd
 
@@ -464,6 +582,305 @@ float K2400::DoMeasurement(FILE* log_keithley, FILE* reading_log_keithley, FILE*
 	resistance_timely = 0;
 	resistance_benchmark = 0;
 	float diffres = 0;
+	float old_resistance = 0;
+	float voltage_write = volt_start - volt_ramp; //we omit the point V=0 by increasing the voltage before measurement!
+	float voltage_read = 0;
+	float current_read = 0;
+
+	char delays[40] = "";
+	sprintf(delays, ":SOUR:DEL %f", delay);
+	int counter = 0; //number of measurements since the most recent ramp_down
+	//execute the code in for loop until we get the required resistance +/- resistance_tol*resistance
+	int switchcounter = 0;
+	float resistance_initial = 100000000;
+
+	// hold the initial voltage for a bit to equilibrate the device
+	sprintf(buffer, ":SOUR:VOLT %f\n", voltage_write);
+	Sleep(5000);
+	resistance_timely = 0;
+
+	for (; GotTargetResistance(resistance_timely, targ_res_consecutive, volt_stop, voltage_read);){
+
+		// This machinery is to get the conductance steps breaking for Mark (160220)
+		//if (resistance_timely > 1500){
+		//	voltage_write += 0.00005;
+		//}
+		//else{
+		//	voltage_write += volt_ramp;    //setting new voltage on Keithley
+		//}
+
+		voltage_write += volt_ramp;    //setting new voltage on Keithley
+		sprintf(buffer, ":SOUR:VOLT %f\n", voltage_write);    //create a new string of a command
+		GPIBWrite(pna, buffer);     //and send it to the source (Keithley)
+		GetReading(buffer, temporary, output, log_keithley); //get what keithley displays and write it to output and log files
+
+		//compute the resistance on basis of measurement from Keithley. Also writes it to output and log
+		// 140422 (sonya) temporarily try just V/I instead of differential resistance computation - see GetResistance function
+		resistance_timely = GetResistance(&diffres, &old_resistance, voltage_read, current_read, reading_log_keithley, output, counter);
+
+		// set the initial resistance if this is the 20th data point taken (give some time to settle)
+		if (switchcounter == 20){
+			resistance_initial = resistance_timely;
+			std::cout << "Initial Resistance is set to " << resistance_benchmark << " ohms.\n";
+			std::cout << "Exit condition (Initial + Target) will be " << (resistance_initial + target_resistance) << " ohms.\n";
+		}
+
+		//this function keeps tracks of the count of consecutive weird measurements and takes care of setting resistance_benchmark
+		KeepTrackIndicators(res_consecutive, targ_res_consecutive, neg_res_consecutive, bench_res_consecutive, resistance_benchmark,
+			resistance_timely, resistance_initial, diffres, target_resistance, target_resistance_tolerance, counter);
+
+		counter++;  //increase the counter to keep track of whether we are at the beginning of ramp cycle or not
+		switchcounter++; //this is just used to store a true initial resistance for the wire against which to check for whether to switch to highR or lowR regime
+		
+		//check if we need to ramp down the voltage. If so, do it and zero the counter. Check if we
+		//decrease the voltage below 0. if so, break the measurement. display message.
+		if (CheckRampDown(resistance_timely, resistance_initial, res_consecutive, bench_res_consecutive, neg_res_consecutive)){
+
+			// 140430 (SDS) instantaneously ramp down to 50% of present voltage
+			voltage_write = 0.8*voltage_write;
+			sprintf(buffer, ":SOUR:VOLT %f\n", voltage_write);
+			GPIBWrite(pna, buffer);
+			if (voltage_write <= 0){
+				printf("ERROR! We just tried to lower the voltage below 0! Stopping the measurement! \n");
+				break;
+			}
+
+			// // 140502 (sds) ramp back at user input rate and ramp back by amount 10% of current voltage
+			//volt_down = 0.3*voltage_write;
+			//int ramp_round = floor(volt_down * 1000); 	 // round the ramp down voltage to nearest integer in mV
+			// sweep the voltage down by a total amount of volt_down, but at 1 mV steps with short delay, and without taking any readings.
+			//for (int k = 0; k < ramp_round; k++){
+			// Sleep(rampdown_dwell); //wait for dwell time miliseconds then proceed with this thread. since we have only one thread it means that we just wait for some time.
+			// voltage_write = voltage_write - 0.001;
+			// sprintf(buffer, ":SOUR:VOLT %f\n", voltage_write);
+			// GPIBWrite(pna, buffer);
+			// if (voltage_write <= 0){
+			//	 printf("ERROR! We just tried to lower the voltage below 0! Stopping the measurement! \n");
+			//	 break;
+			// }
+			//	 }
+			// GPIBWrite(pna, delays); 	 //go back to using the user-set delay
+
+			counter = 0; 	 // after any ramp down reset counter to 0 so it will take new benchmark resistance on next 6 iterations of loop.
+			bench_res_consecutive = 0; // we have to get this to 0. otherwise we might run into trouble with many ramp downs one after another
+			neg_res_consecutive = 0; // we have to get this to 0. otherwise we might run into trouble with many ramp downs one after another
+			res_consecutive = 0;
+
+		}
+	}
+	return voltage_write;
+}
+
+float K2400::DoCurvatureMeasurement(FILE* log_keithley, FILE* reading_log_keithley, FILE* output, float delay){
+	//initialize local variables
+	std::string temporary = "";
+	char buffer[ARRAYSZ] = ""; // size of buffer is given at the beginning
+
+	//counter_0 is number of measurements since the most recent ramp_down, counter_1 is number of measurements since 
+	//most recent voltage increment, counter_2 is number of consecutive R > 1.005*Rbench hits and counter_3 is number of 
+	//consecutive R > 1.04*Rbench hits
+	int counter_0 = 0, counter_1 = 0, counter_2 = 0, counter_3 = 0;
+	int targ_res_consecutive = 0;
+
+	resistance_timely = 0;
+	resistance_benchmark = 0;
+
+	float diffres = 0;
+	float old_resistance = 0;
+	float voltage_write = volt_start; //we omit the point V=0 by increasing the voltage before measurement!
+	float voltage_read = 0;
+	float current_read = 0;
+
+	char delays[40] = "";
+	sprintf(delays, ":SOUR:DEL %f", delay);
+
+	//execute the code in for loop until we get the required resistance +/- resistance_tol*resistance
+	int switchcounter = 0;
+	float resistance_initial = 100000000;
+	int bestString = 0;
+
+	// hold the initial voltage for a bit to equilibrate the device
+	sprintf(buffer, ":SOUR:VOLT %f\n", voltage_write);
+	Sleep(5000);
+	resistance_timely = 0;
+
+	for (; GotTargetResistance(resistance_timely, targ_res_consecutive, volt_stop, voltage_read);){
+
+		sprintf(buffer, ":SOUR:VOLT %f\n", voltage_write);    //create a new string of a command
+		GPIBWrite(pna, buffer);     //and send it to the source (Keithley)
+		GetReading(buffer, temporary, output, log_keithley); //get what keithley displays and write it to output and log files
+
+		//compute the resistance on basis of measurement from Keithley. Also writes it to output and log
+		// 140422 (sonya) temporarily try just V/I instead of differential resistance computation - see GetResistance function
+		resistance_timely = GetResistance(&diffres, &old_resistance, voltage_read, current_read, reading_log_keithley, output, counter_0);
+
+		// set the initial resistance if this is the 20th data point taken (give some time to settle)
+		if (switchcounter == 20){
+			resistance_initial = resistance_benchmark;
+			std::cout << "Initial Resistance is set to " << resistance_initial << " ohms.\n";
+			std::cout << "Exit condition (Initial + Target) will be " << (resistance_initial + target_resistance) << " ohms.\n";
+		}
+
+		// update indicators for counting number of points since previous ramp back, and number of points dwelt on this voltage
+		counter_0++;
+		counter_1++;
+		switchcounter++; //this is just used to store a true initial resistance for the wire against which to check for whether to switch to highR or lowR regime
+		
+		// update indicators for whether the present resistance is indicating EM onset or rapid EM
+		KeepTrackCurvatureIndicators(counter_0, counter_1, counter_2, counter_3, bestString, rampup_thresh, rampback_thresh, targ_res_consecutive, resistance_benchmark, resistance_timely, old_resistance, resistance_initial, diffres, target_resistance, target_resistance_tolerance);
+
+		////check if we need to ramp up, ramp down or keep fixed the voltage, and zero the counters as needed. Check if we
+		////decrease the voltage below 0. if so, break the measurement. display message.
+		////if (counter_1 < 5){
+		////	voltage_write = voltage_write;
+		////}
+		////else{
+		////	if (bestString < 4 && counter_1 == 5){
+		////		voltage_write += volt_ramp;
+		////		counter_1 = 0;
+		////		counter_2 = 0;
+		////		bestString = 0;
+		////		std::cout << "Resistance is " << resistance_timely << " ohms. Step up to " << voltage_write << " V.\n";
+		////	}
+		////	else{
+		////		//voltage_write = voltage_write*0.8;
+		////		// 160303 - modifying to dwell after a string of R > Rtol is found
+		////		voltage_write = voltage_write;
+		/////*		counter_0 = 0;
+		////		counter_1 = 0;
+		////		counter_2 = 0;
+		////		bestString = 0;*/
+		////		std::cout << "Resistance is " << resistance_timely << " ohms.\n";
+		////		// std::cout << "**RAMP BACK TRIGGERED**\n";
+		////	}
+		////}
+	
+		// More complicated dwell routine - dwells on four consecutive increasing R's, but then checks again after another 15 measurements at that voltage to see if it was a faulty dwell.
+		if (counter_1 < 5){
+			voltage_write = voltage_write; // always take at least five measurements at a given voltage
+			std::cout << "counter_1 = " << counter_1 << " , bestString = " << bestString << ".\n";
+		}
+		else if (counter_1 == 5){		// once five measurements are taken, check whether to stay at this voltage
+			if (bestString < 4){		// if there were less than four consecutive increasing R measurements then ramp up V, otherwise dwell at V for another measurement
+				voltage_write += volt_ramp;
+				counter_1 = 0;
+				counter_2 = 0;
+				bestString = 0;
+				std::cout << "Resistance is " << resistance_timely << " ohms. Step up to " << voltage_write << " V.\n";
+				std::cout << "counter_1 = " << counter_1 << " , bestString = " << bestString << ".\n";
+			}
+			else {
+				voltage_write = voltage_write;
+				counter_2 = 0;
+				bestString = 0;  // reset bestString to prepare for checking whether this a false dwell
+				std::cout << "DWELL TRIGGERED: Resistance is " << resistance_timely << " ohms.\n";
+				std::cout << "counter_1 = " << counter_1 << " , bestString = " << bestString << ".\n";
+			}
+		}
+		else if (counter_1 > 5 && counter_1 < 15){		// always take at least 10 more measurements at the V where a dwell is initiated
+			voltage_write = voltage_write;
+			std::cout << "DWELL CHECK: Resistance is " << resistance_timely << " ohms.\n";
+			std::cout << "counter_1 = " << counter_1 << " , bestString = " << bestString << ".\n";
+		}
+		else if (counter_1 == 15){		// after 10 extra measurements check whether it was a false dwell or if we really do have EM
+			if (bestString < 5){
+				voltage_write += volt_ramp;
+				counter_1 = 0;
+				counter_2 = 0;
+				bestString = 0;
+				std::cout << "FALSE DWELL!\n";
+				std::cout << "counter_1 = " << counter_1 << " , bestString = " << bestString << ".\n";
+			}
+			else {
+				voltage_write = voltage_write;
+				std::cout << "DWELL CONFIRMED: Resistance is " << resistance_timely << " ohms.\n";
+				std::cout << "counter_1 = " << counter_1 << " , bestString = " << bestString << ".\n";
+			}
+		}
+		else {
+			voltage_write = voltage_write;
+			std::cout << "DWELLING: Resistance is " << resistance_timely << " ohms.\n";
+			std::cout << "counter_1 = " << counter_1 << " , bestString = " << bestString << ".\n";
+		}
+
+
+
+		sprintf(buffer, ":SOUR:VOLT %f\n", voltage_write);
+		GPIBWrite(pna, buffer);
+		if (voltage_write <= 0){
+			printf("ERROR! We just tried to lower the voltage below 0! Stopping the measurement! \n");
+			break;
+		}
+
+
+		// Turn the counter_1 exit condition into a target exit R condition, just to save some time with coding....
+		if (counter_1 > 2000){
+			resistance_timely = 1000000;
+		}
+
+	}
+
+	return voltage_write;
+}
+
+float K2400::DoStabilizeMeasurement(FILE* log_keithley, FILE* reading_log_keithley, FILE* output, float delay, float Vstab, float stabstep){
+	//initialize local variables
+	std::string temporary = "";
+	char buffer[ARRAYSZ] = ""; // size of buffer is given at the beginning
+	int targ_res_consecutive = 0;
+	int neg_res_consecutive = 0;
+	int bench_res_consecutive = 0;
+	int res_consecutive = 0;
+	resistance_timely = 0;
+	resistance_benchmark = 0;
+	float diffres = 0;
+	float old_resistance = 0;
+	float voltage_write = volt_start - volt_ramp; //we omit the point V=0 by increasing the voltage before measurement!
+	float voltage_read = 0;
+	float current_read = 0;
+
+	char delays[40] = "";
+	sprintf(delays, ":SOUR:DEL %f", delay);
+	int counter = 0; //number of measurements since the most recent ramp_down
+	//execute the code in for loop until we get the required resistance +/- resistance_tol*resistance
+	int switchcounter = 0;
+	float resistance_initial = 100000000;
+
+	//// hold the initial voltage for a bit to equilibrate the device
+	//sprintf(buffer, ":SOUR:VOLT %f\n", voltage_write);
+	//Sleep(5000);
+
+	std::cout << "Press F10 to halt current stabilization.\n";
+	voltage_write = Vstab;
+
+	while (resistance_timely < 15000 && !GetAsyncKeyState(VK_F10)){
+		voltage_write = voltage_write + stabstep;    //setting new voltage on Keithley
+		sprintf(buffer, ":SOUR:VOLT %f\n", voltage_write);    //create a new string of a command
+		GPIBWrite(pna, buffer);     //and send it to the source (Keithley)
+		GetReading(buffer, temporary, output, log_keithley); //get what keithley displays and write it to output and log files
+
+		//compute the resistance on basis of measurement from Keithley. Also writes it to output and log
+		// 140422 (sonya) temporarily try just V/I instead of differential resistance computation - see GetResistance function
+		resistance_timely = GetResistance(&diffres, &old_resistance, voltage_read, current_read, reading_log_keithley, output, counter);
+		std::cout << resistance_timely << " ohms.\n";
+	}
+
+
+	return voltage_write;
+}
+
+float K2400::DoHeal(FILE* log_keithley, FILE* reading_log_keithley, FILE* output, float delay){
+	//initialize local variables
+	std::string temporary = "";
+	char buffer[ARRAYSZ] = ""; // size of buffer is given at the beginning
+	int targ_res_consecutive = 0;
+	int neg_res_consecutive = 0;
+	int bench_res_consecutive = 0;
+	int res_consecutive = 0;
+	resistance_timely = 0;
+	resistance_benchmark = 0;
+	float diffres = 0;
+	float old_resistance = 0;
 	float voltage_write = volt_start - volt_ramp; //we omit the point V=0 by increasing the voltage before measurement!
 	float voltage_read = 0;
 	float current_read = 0;
@@ -481,20 +898,20 @@ float K2400::DoMeasurement(FILE* log_keithley, FILE* reading_log_keithley, FILE*
 
 		//compute the resistance on basis of measurement from Keithley. Also writes it to output and log
 		// 140422 (sonya) temporarily try just V/I instead of differential resistance computation - see GetResistance function
-		resistance_timely = GetResistance(&diffres, voltage_read, current_read, reading_log_keithley, output, counter);
+		resistance_timely = GetResistance(&diffres, &old_resistance, voltage_read, current_read, reading_log_keithley, output, counter);
 
 		//this function keeps tracks of the count of consecutive weird measurements and takes care of setting resistance_benchmark
-		KeepTrackIndicators(res_consecutive, targ_res_consecutive, neg_res_consecutive, bench_res_consecutive, resistance_benchmark,
+		KeepTrackHealIndicators(res_consecutive, targ_res_consecutive, neg_res_consecutive, bench_res_consecutive, resistance_benchmark,
 			resistance_timely, diffres, target_resistance, target_resistance_tolerance, counter);
 
 		counter++;  //increase the counter to keep track of whether we are at the beginning of ramp cycle or not
 
 		//check if we need to ramp down the voltage. If so, do it and zero the counter. Check if we
 		//decrease the voltage below 0. if so, break the measurement. display message.
-		if (CheckRampDown(resistance_timely,res_consecutive, bench_res_consecutive, neg_res_consecutive)){
+		if (CheckRampDown(resistance_timely, 0, res_consecutive, bench_res_consecutive, neg_res_consecutive)){
 
 			// 140430 (SDS) instantaneously ramp down to 50% of present voltage
-			voltage_write = 0.8*voltage_write;
+			voltage_write = voltage_write;
 			sprintf(buffer, ":SOUR:VOLT %f\n", voltage_write);
 			GPIBWrite(pna, buffer);
 			if (voltage_write <= 0){
@@ -544,6 +961,7 @@ float K2400::DoSweep(FILE* log_keithley, FILE* reading_log_keithley, FILE* outpu
 	float resistance_lowbias = 0;
 
 	float diffres = 0;
+	float old_resistance = 0;
 	float voltage_write = volt_start_KS - volt_ramp_KS; //we omit the point V=0 by increasing the voltage before measurement!
 	float voltage_read = 0;
 	float current_read = 0;
@@ -560,24 +978,24 @@ float K2400::DoSweep(FILE* log_keithley, FILE* reading_log_keithley, FILE* outpu
 
 		//compute the resistance on basis of measurement from Keithley. Also writes it to output and log
 		// 140422 (sonya) temporarily try just V/I instead of differential resistance computation - see GetResistance function
-		resistance_timely = GetResistance(&diffres, voltage_read, current_read, reading_log_keithley, output, counter);
+		resistance_timely = GetResistance(&diffres, &old_resistance, voltage_read, current_read, reading_log_keithley, output, counter);
 		std::cout << resistance_timely << " Ohms @ " << voltage_write << " V - ";
 
 		if (voltage_write < 0.1){
-			target_resistance_scaled = 650000;
+			target_resistance_scaled = target_resistance_KS;
 		}
 		else if (voltage_write >= 0.1 && voltage_write <= 0.2){
-			target_resistance_scaled = 650000 - (voltage_write - 0.1) * 2500000*beta;
+			target_resistance_scaled = target_resistance_KS - (voltage_write - 0.1) * 2500000*beta;
 		}
 		else if (voltage_write > 0.2 && voltage_write <= 0.7){
-			float Rlowend = 650000 - (0.1) * 2500000 * beta;
-			float Rhighend = 700000-650000*beta;
+			float Rlowend = target_resistance_KS - (0.1) * 2500000 * beta;
+			float Rhighend = target_resistance_KS - (target_resistance_KS - 100000)*beta;
 			target_resistance_scaled = Rlowend - (voltage_write - 0.2)*(Rlowend - Rhighend) / 0.5;
 			//target_resistance_scaled = 400000 - pow((voltage_write - 0.2), 2) * alpha;
 		}
 		else{
 			
-			target_resistance_scaled = 700000 - 550000 * beta;
+			target_resistance_scaled = target_resistance_KS - (target_resistance_KS - 100000)* beta;
 			//target_resistance_scaled = R_max + (880000-alpha)/8;
 		}
 		
@@ -586,19 +1004,25 @@ float K2400::DoSweep(FILE* log_keithley, FILE* reading_log_keithley, FILE* outpu
 		// update the indicator for whether we have a string of consecutive target resistance hits. 
 		if ((resistance_timely > target_resistance_scaled) | (resistance_timely < 0)){
 			
-			// sample at 200mV to check actual resistance
+			// sample at 100mV to check actual resistance, do it 3 times to see how reliable keithley is
 			storevoltage = voltage_write;
+
 			GPIBWrite(pna, ":SOUR:VOLT 0.1\n");     //and send it to the source (Keithley)
-			GetReading(buffer, temporary, output, log_keithley); //get what keithley displays and write it to output and log files
-			resistance_lowbias = GetResistance(&diffres, voltage_read, current_read, reading_log_keithley, output, counter);
+
+				GetReading(buffer, temporary, output, log_keithley); //get what keithley displays and write it to output and log files
+				resistance_lowbias = GetResistance(&diffres, &old_resistance, voltage_read, current_read, reading_log_keithley, output, counter);
+				GetReading(buffer, temporary, output, log_keithley); //get what keithley displays and write it to output and log files
+				resistance_lowbias = GetResistance(&diffres, &old_resistance, voltage_read, current_read, reading_log_keithley, output, counter);
+				GetReading(buffer, temporary, output, log_keithley); //get what keithley displays and write it to output and log files
+				resistance_lowbias = GetResistance(&diffres, &old_resistance, voltage_read, current_read, reading_log_keithley, output, counter);
 
 			// based on 200mV sample decide whether it is finished, or whether to move up to more aggressive algorithm
-			if ((resistance_lowbias > 650000) || (beta == 0)){
+			if ((resistance_lowbias > target_resistance_KS) || (beta == 0)){
 				targ_res_consecutive = targ_res_consecutive + 1;
 				voltage_write = storevoltage;
 			}
 			else{
-				beta -= 0.05;
+				beta -= 0.02;
 				std::cout << "\n\n Switching to more aggressive algorithm with alpha = " << beta << "\n\n\n";
 				voltage_write = storevoltage;
 			}
@@ -617,6 +1041,7 @@ float K2400::DoDwell(FILE* log_keithley, FILE* reading_log_keithley, FILE* outpu
 	resistance_timely = 0;
 	resistance_benchmark = 0;
 	float diffres = 0;
+	float old_resistance = 0;
 	float voltage_write = volt_start - volt_ramp; //we omit the point V=0 by increasing the voltage before measurement!
 	float voltage_read = 0;
 	float current_read = 0;
@@ -636,7 +1061,7 @@ float K2400::DoDwell(FILE* log_keithley, FILE* reading_log_keithley, FILE* outpu
 
 		//compute the resistance on basis of measurement from Keithley. Also writes it to output and log
 		// 140422 (sonya) temporarily try just V/I instead of differential resistance computation - see GetResistance function
-		resistance_timely = GetResistance(&diffres, voltage_read, current_read, reading_log_keithley, output, counter);
+		resistance_timely = GetResistance(&diffres, &old_resistance, voltage_read, current_read, reading_log_keithley, output, counter);
 		std::cout << resistance_timely << " ohms \n";
 		// update the indicator for whether we have a string of consecutive target resistance hits. 
 		if ((resistance_timely > target_resistance*(1 - target_resistance_tolerance)) | (resistance_timely<0)){
@@ -647,7 +1072,7 @@ float K2400::DoDwell(FILE* log_keithley, FILE* reading_log_keithley, FILE* outpu
 	return voltage_write;
 }
 
-float K2400::GetResistance(float *diffres, float &voltage_read, float &current_read, FILE* reading_log_keithley, FILE* output, int counter){
+float K2400::GetResistance(float *diffres, float *old_resistance, float &voltage_read, float &current_read, FILE* reading_log_keithley, FILE* output, int counter){
 
 	//initialize/define the local variables
 	char voltage_new[14]; //here we load the string of numbers for voltage before we convert it into a number
@@ -687,6 +1112,9 @@ float K2400::GetResistance(float *diffres, float &voltage_read, float &current_r
 	// after all the differential resistance calculation machinery is through, use its value for resistance to return to diffres
 	*diffres = resistance;
 
+	//store a value that holds the resistance of the prior data point
+	*old_resistance = voltage_read / current_read;
+
 	//and assign new values to the voltage and intensity variables
 	voltage_read = voltage_new_num;
 	current_read = current_new_num;
@@ -723,6 +1151,148 @@ void K2400::GetReading(char* buffer, std::string &temporary, FILE* output, FILE*
 }
 
 void K2400::KeepTrackIndicators(int &res_consecutive, int &targ_res_consecutive, int &neg_res_consecutive, int &bench_res_consecutive, float &resistance_benchmark,
+	float &resistance_timely, float resistance_initial, float &diffres, float target_resistance, float target_resistance_tolerance, int &counter){
+
+	//if it is the first measurement "down the hill", use it to set benchmark. Reject first n data points up to lowcount, then use next
+	// m data points up to highcount to generate an average resistance as benchmark.
+
+	int highcount = 13;
+	int lowcount = 5;
+
+	if (counter < highcount){
+		if (counter < lowcount){
+			resistance_benchmark = resistance_timely;
+		}
+		else{
+			resistance_benchmark = (resistance_benchmark*(counter - lowcount + 1) + resistance_timely) / (counter - lowcount + 2);
+		}
+	}
+
+	if (counter == highcount){
+		char bench[100] = "";
+		sprintf(bench, "avg resistance is %f", resistance_benchmark);
+		std::cout << bench << std::endl;
+	}
+
+	//if (counter > highcount && (resistance_timely >= (resistance_benchmark*(1 + resistance_tolerance)))){
+	// bench_res_consecutive = bench_res_consecutive + 1;
+	//}
+	//else bench_res_consecutive = 0;
+
+	//// update the indicator for whether we have a string of consecutive negative resistance hits.
+	//if (resistance_timely < 0){
+	// neg_res_consecutive = neg_res_consecutive + 1;
+	//}
+	//else neg_res_consecutive = 0;
+
+
+	// pick which resistance tolerance we are using depending on what regime we are in. The value starts out as that of the highest-R regime and then we loop through the regimes - restol gets overwritten on each successive loop if the endpoint of that regime is above Rjct. 
+	float restol = resistance_tolerance[3];
+	float compare;
+	float Rjct = max(0,(resistance_timely - resistance_initial));
+	for (int k = 3; k >= 0; --k){
+		compare = res_switch[k] - Rjct;
+		if (compare > 0){
+			restol = resistance_tolerance[k];
+		}
+	}
+
+
+	// increment for whether v/i metric gives us res > res benchmark
+	if ((counter > highcount && (resistance_timely >= (resistance_benchmark*(1 + restol))))){
+		res_consecutive = res_consecutive + 1;
+		std::cout << "Hit. Res_consecutive is " << res_consecutive << "\n";
+	}
+	else res_consecutive = 0;
+
+	// increment for whether dv/di metric gives us NDR - this indicator increments at any point in the ramp, even if we are still in the initial part of the ramp (counter < highcount)
+	if (diffres < 0){
+		neg_res_consecutive = neg_res_consecutive + 1;
+	}
+	else neg_res_consecutive = 0;
+
+	// update the indicator for whether we have a string of consecutive target resistance hits. We are looking only for stuff above
+	if ((resistance_timely > (resistance_initial+target_resistance)*(1 - target_resistance_tolerance)) | (resistance_timely<0)){
+		targ_res_consecutive = targ_res_consecutive + 1;
+	}
+	else targ_res_consecutive = 0;
+
+
+}
+
+void K2400::KeepTrackCurvatureIndicators(int &counter_0, int &counter_1, int &counter_2, int &counter_3, int &bestString, float rampup_thresh, float rampback_thresh, int &targ_res_consecutive, float &resistance_benchmark,
+	float &resistance_timely, float old_resistance, float resistance_initial, float &diffres, float target_resistance, float target_resistance_tolerance){
+
+	//if it is the first measurement "down the hill", use it to set benchmark. Reject first n data points up to lowcount, then use next
+	// m data points up to highcount to generate an average resistance as benchmark.
+	int highcount = 15;
+	int lowcount = 5;
+
+	if (counter_0 < highcount){
+		if (counter_0 < lowcount){
+			resistance_benchmark = resistance_timely;
+		}
+		else{
+			resistance_benchmark = (resistance_benchmark*(counter_0 - lowcount + 1) + resistance_timely) / (counter_0 - lowcount + 2);
+		}
+	}
+
+	if (counter_0 == highcount){
+		char bench[100] = "";
+		sprintf(bench, "avg resistance is %f", resistance_benchmark);
+		std::cout << "BENCHMARK COMPUTED - " << resistance_benchmark << " ohms. \n";
+	}
+
+	// bestString tracks number of consecutive measurements where R has increased compared to previous measurement
+	// increment bestString for whether this data point has a higher resistance than the previous one
+	if ((counter_0 > highcount) && (resistance_timely >= old_resistance)){
+		counter_2 = counter_2 + 1;
+		bestString = max(bestString, counter_2);
+		//std::cout << "EM ONSET DETECTED - consecutive points is " << counter_2 << ".\n";
+	}
+	else {
+		bestString = max(bestString, counter_2);
+		counter_2 = 0;
+	}
+
+	//// 160303 Change counter_2 from looking for consecutive increases in R to looking for non-consecutive count of R > (1+tol)*Rbench
+	//// increment for whether this data point has a resistance greater than the benchmark by some tolerance
+	//if ((counter_0 > highcount) && (resistance_timely >= (1+rampback_thresh)*resistance_benchmark)){
+	//	counter_2 = counter_2 + 1;
+	//	bestString = counter_2;
+	//	//std::cout << "EM ONSET DETECTED - consecutive points is " << counter_2 << ".\n";
+	//}
+	//else {
+	//	/*bestString = max(bestString, counter_2);*/
+	//	//counter_2 = 0;
+	//}
+
+
+
+	//// increment for whether v/i metric gives us R such that we want to NOT increment the voltage
+	//if ((counter_0 > highcount && (resistance_timely >= (resistance_benchmark*(1 + rampup_thresh))))){
+	//	counter_2 = counter_2 + 1;
+	//	std::cout << "EM ONSET DETECTED - consecutive points is " << counter_2 << ".\n";
+	//}
+	//else counter_2 = 0;
+
+	//// increment for whether v/i metric gives us R such that we want to ramp back the voltage
+	//if ((counter_0 > highcount && (resistance_timely >= (resistance_benchmark*(1 + rampback_thresh))))){
+	//	counter_3 = counter_3 + 1;
+	//	std::cout << "RAPID EM DETECTED - consecutive points is " << counter_3 << ".\n";
+	//}
+	//else counter_3 = 0;
+
+	// update the indicator for whether we have a string of consecutive target resistance hits. We are looking only for stuff above
+	if ((resistance_timely >(resistance_initial + target_resistance)*(1 - target_resistance_tolerance)) | (resistance_timely<0)){
+		targ_res_consecutive = targ_res_consecutive + 1;
+	}
+	else targ_res_consecutive = 0;
+
+
+}
+
+void K2400::KeepTrackHealIndicators(int &res_consecutive, int &targ_res_consecutive, int &neg_res_consecutive, int &bench_res_consecutive, float &resistance_benchmark,
 	float &resistance_timely, float &diffres, float target_resistance, float target_resistance_tolerance, int &counter){
 
 	//if it is the first measurement "down the hill", use it to set benchmark. Reject first n data points up to lowcount, then use next
@@ -758,28 +1328,32 @@ void K2400::KeepTrackIndicators(int &res_consecutive, int &targ_res_consecutive,
 	//else neg_res_consecutive = 0;
 
 
-	// pick which resistance tolerance we are using depending on if we are in high or low resistance regime
-	float restol;
-	if (resistance_timely < res_switch){
-		restol = resistance_tolerance;
+	// pick which resistance tolerance we are using depending on what regime we are in. The value starts out as that of the highest-R regime and then we loop through the regimes - restol gets overwritten on each successive loop if the endpoint of that regime is above Rjct. 
+	float restol = resistance_tolerance[3];
+	float compare;
+	float Rjct = max(0, resistance_timely);
+	for (int k = 3; k >= 0; --k){
+		compare = res_switch[k] - Rjct;
+		if (compare > 0){
+			restol = resistance_tolerance[k];
+		}
 	}
-	else { restol = resistance_tolerance_high; }
 
 	// increment for whether v/i metric gives us res > res benchmark
-	if ((counter > highcount && (resistance_timely >= (resistance_benchmark*(1 + restol))))){
+	if ((counter > highcount && (resistance_timely <= (resistance_benchmark*(1 - restol))))){
 		res_consecutive = res_consecutive + 1;
 		std::cout << "Hit. Res_consecutive is " << res_consecutive << "\n";
 	}
 	else res_consecutive = 0;
 
-	// increment for whether dv/di metric gives us NDR - this indicator increments at any point in the ramp, even if we are still in the initial part of the ramp (counter < highcount)
-	if (diffres < 0){
-		neg_res_consecutive = neg_res_consecutive + 1;
-	}
-	else neg_res_consecutive = 0;
+	//// increment for whether dv/di metric gives us NDR - this indicator increments at any point in the ramp, even if we are still in the initial part of the ramp (counter < highcount)
+	//if (diffres > 0){
+	//	neg_res_consecutive = neg_res_consecutive + 1;
+	//}
+	//else neg_res_consecutive = 0;
 
 	// update the indicator for whether we have a string of consecutive target resistance hits. We are looking only for stuff above
-	if ((resistance_timely > target_resistance*(1 - target_resistance_tolerance)) | (resistance_timely<0)){
+	if (resistance_timely < target_resistance*(1 - target_resistance_tolerance)){
 		targ_res_consecutive = targ_res_consecutive + 1;
 	}
 	else targ_res_consecutive = 0;
@@ -787,21 +1361,24 @@ void K2400::KeepTrackIndicators(int &res_consecutive, int &targ_res_consecutive,
 
 }
 
-bool K2400::CheckRampDown(float resistance_timely, int &res_consecutive, int &bench_res_consecutive, int &neg_res_consecutive){
+bool K2400::CheckRampDown(float resistance_timely, float resistance_initial, int &res_consecutive, int &bench_res_consecutive, int &neg_res_consecutive){
 
-	// choose which number of consecutive increased resistance or consecutive negative resistance to use depending on whether we are in high or low R regime
-	float trigger;
-	float neg;
-	if (resistance_timely < res_switch){
-		trigger = ntrigger;
-		neg = nnegres;
+	// pick which consecutive numbers we are using depending on what regime we are in. The value starts out as that of the highest-R regime and then we loop through the regimes - value gets overwritten on each successive loop if the endpoint of that regime is above Rjct. 
+	float ntrig = ntrigger[3];
+	float nndrs = nnegres[3];
+	float compare;
+	float Rjct = max(0, (resistance_timely - resistance_initial));
+	for (int k = 3; k >= 0; --k){
+		compare = res_switch[k] - Rjct;
+		if (compare > 0){
+			ntrig = ntrigger[k];
+			nndrs = nnegres[k];
+		}
 	}
-	else { 
-		trigger = ntrigger_high;
-		neg = nnegres_high;}
+
 
 	// check the consecutive increased resistances and consecutive negative differential resistances conditions
-	if ((res_consecutive >= trigger) | (neg_res_consecutive >= neg)){
+	if ((res_consecutive >= ntrig) | (neg_res_consecutive >= nndrs)){
 		std::cout << "ramp down triggered \n";
 		return true;
 	}
@@ -883,6 +1460,99 @@ void K2400::holdGateVoltage(){
 	// go back to 0 voltage on gateline
 	GPIBWrite(pna, ":SOUR:VOLT 0");
 	GPIBWrite(pna, ":OUTP OFF");
+}
+
+void K2400::setGateVoltage(float voltage){
+	// sourcing voltage
+	GPIBWrite(pna, ":SOUR:FUNC VOLT");
+	// sensing mode DC current
+	GPIBWrite(pna, ":SENS:FUNC 'CURR:DC'");
+	//       // voltage source range in auto
+	//GPIBWrite(pna,":SOUR:VOLT:RANGE:AUTO ON");
+	//       // current sensing range in auto
+	GPIBWrite(pna, ":SENS:CURR:RANGE:AUTO ON");
+	// Auto ranging seemed to cause exploding of devices.....???
+
+	GPIBWrite(pna, ":SOUR:VOLT:RANGE 21");
+
+	// current protection (compliance) set at 1A
+
+	GPIBWrite(pna, ":SENS:CURR:PROT 1.0");
+	// fixed voltage mode
+	GPIBWrite(pna, ":SOUR:VOLT:MODE FIXED");
+	// terminals connected on the front
+	GPIBWrite(pna, ":ROUT:TERM FRONT");
+	// 2w measurement
+	GPIBWrite(pna, ":SYST:RSEN OFF");
+	// setting output format to V I
+	GPIBWrite(pna, ":FORM:ELEM VOLT,CURR");
+	GPIBWrite(pna, ":SENS:CURR:NPLC 1");
+	GPIBWrite(pna, ":SOUR:DEL 0.01");
+
+	char buffer[ARRAYSZ] = ""; // size of buffer is given at the beginning
+	sprintf(buffer, ":SOUR:VOLT %f\n", voltage);    //create a new string of a command for sourcing the voltage
+	GPIBWrite(pna, buffer);     //and send it to the source (Keithley)
+	GPIBWrite(pna, ":OUTP ON");
+}
+
+void K2400::holdDEPVoltage(float voltage, float holdTime){
+	// sourcing voltage
+	GPIBWrite(pna, ":SOUR:FUNC VOLT");
+	// sensing mode DC current
+	GPIBWrite(pna, ":SENS:FUNC 'CURR:DC'");
+	//       // voltage source range in auto
+	//GPIBWrite(pna,":SOUR:VOLT:RANGE:AUTO ON");
+	//       // current sensing range in auto
+	GPIBWrite(pna, ":SENS:CURR:RANGE:AUTO ON");
+	// Auto ranging seemed to cause exploding of devices.....???
+
+	GPIBWrite(pna, ":SOUR:VOLT:RANGE 21");
+
+	// current protection (compliance) set at 1A
+
+	GPIBWrite(pna, ":SENS:CURR:PROT 1.0");
+	// fixed voltage mode
+	GPIBWrite(pna, ":SOUR:VOLT:MODE FIXED");
+	// terminals connected on the front
+	GPIBWrite(pna, ":ROUT:TERM FRONT");
+	// 2w measurement
+	GPIBWrite(pna, ":SYST:RSEN OFF");
+	// setting output format to V I
+	GPIBWrite(pna, ":FORM:ELEM VOLT,CURR");
+	GPIBWrite(pna, ":SENS:CURR:NPLC 1");
+	GPIBWrite(pna, ":SOUR:DEL 0.01");
+
+	
+	char buffer[ARRAYSZ] = ""; // size of buffer is given at the beginning
+	sprintf(buffer, ":SOUR:VOLT %f\n", voltage);    //create a new string of a command for sourcing the voltage
+	GPIBWrite(pna, buffer);     //and send it to the source (Keithley)
+	GPIBWrite(pna, ":OUTP ON");
+
+	typedef std::chrono::high_resolution_clock Clock;
+	Clock::time_point t0;
+	Clock::time_point t1;
+	typedef std::chrono::minutes minutes;
+	minutes Elapsed;
+
+	t0 = Clock::now();
+
+	// hold the voltage for the allotted time or until the user presses F12
+	std::cout << "=======================================================================\n";
+	std::cout << "Press 'F12' to stop sourcing the DEP voltage... \n";
+	std::cout << "=======================================================================\n";
+	t1 = Clock::now();
+	Elapsed = std::chrono::duration_cast<minutes>(t1 - t0);
+	while (Elapsed.count() < holdTime && !GetAsyncKeyState(VK_F12)){
+		Sleep(100);
+		GPIBWrite(pna, ":READ?");
+		GPIBRead(pna, buffer);
+		t1 = Clock::now();
+		Elapsed = std::chrono::duration_cast<minutes>(t1 - t0);
+	}
+
+	// go back to 0 voltage on gateline
+	GPIBWrite(pna, ":SOUR:VOLT 0");
+	//GPIBWrite(pna, ":OUTP OFF");
 }
 
 int K2400::GPIBWrite(int ud, char* cmd){

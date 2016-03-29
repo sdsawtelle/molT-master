@@ -31,12 +31,14 @@ public:
 	void setSwBrParamsLater(int* useEMVFlag, float* minStart, float* maxStart, float* targetR, float* stepBias, float* stepV);
 	void setIVParamsLater(float* Vstart, float* Vstop, float* Vstep);
 	int sampleSingle(int devnum, FILE* outputs[36], int cycle);
-	int constsampleSingle(int devnum, FILE* outputs[36], int cycle);
+	int constsampleSingle(int devnum, FILE* outputs[36], int cycle, float voltage, float Rdead);
 	void yieldSingle(int devnum, FILE* outputs[36]);
 	float yieldGapSingle();
 	void sweepSingle(int devnum, FILE* outputs[36], int gateFlag);
 	float sweepBreak(int devnum, FILE* outputs[36], float maxStart, float minStart, float targetR, float stepBias, float stepV, float temperature);
+	void configSample(float voltage);
 	void constconfigSample();
+	float healSingle(float Vsample, FILE* output);
 	float wait_time;	//delay between subsequent sweeps through all device
 	void Spawn(int pick_program, std::string emailAddress); // i will be the parameter that chooses which program to Spawn!
 	void SendMail(std::string emailAddress);
@@ -51,10 +53,10 @@ private:
 	int portVoltages[36];	// this will store whether to use the high or low voltage value for each device
 	int voltageFlag; // a flag that indicates what is the present set value of bias for the SPA
 	int pna;     // this is gonna be our holder of Unique iDentifier
-	void configSample();
-	void configGatedSweepsNoIG(float Vstart, float Vstop, float Vstep, float Vstart_gate, float Vstep_gate, int Nsteps_gate);
+	void configGatedSweepsNoIG(float Vstart, float Vstop, float Vstep, float Vstart_gate, float Vstep_gate, float Vstop_gate);
 	int GetReading(char* buffer, std::string &temporary, FILE* sb_output);
 	int GetParsedReading(char* buffer, std::string &temporary, FILE* sb_output);
+	int GetParsedSampleReading(char* buffer, std::string &temporary, FILE* sb_output);
 	int GetGatedReading(char* buffer, std::string &temporary, FILE* sb_output);
 	int GetGatedReadingNoIG(char* buffer, std::string &temporary, FILE* sb_output);
 	int GetYieldReading(char* buffer, std::string &temporary, FILE* sb_output);

@@ -73,6 +73,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClInclude Include="graph.h" />
+    <ClInclude Include="DMM.h" />
     <ClInclude Include="K2400.H" />
     <ClInclude Include="menu.h" />
     <ClInclude Include="ni488.h" />
@@ -81,6 +82,7 @@
     <ClInclude Include="Switchbox.h" />
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="DMM.cpp" />
     <ClCompile Include="graph.cpp" />
     <ClCompile Include="K2400.cpp" />
     <ClCompile Include="main.cpp" />

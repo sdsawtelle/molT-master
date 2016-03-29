@@ -1,28 +1,45 @@
-﻿Build started 10/30/2015 9:14:40 PM.
+﻿Build started 3/19/2016 2:14:12 PM.
      1>Project "C:\Users\Sonya\Documents\Code_GitVC\Cpp\molT-master\Master\Master.vcxproj" on node 2 (Build target(s)).
      1>ClCompile:
-         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /I"C:\Users\Sonya\Documents\Code\Cpp\molT-master\Master" /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D WIN32 /D _CRT_SECURE_NO_WARNINGS /D _DEBUG /D _CONSOLE /D _LIB /D _MBCS /Gm /EHsc /RTC1 /MTd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt K2400.cpp
-         K2400.cpp
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(109): warning C4305: '=' : truncation from 'double' to 'float'
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(111): warning C4305: '=' : truncation from 'double' to 'float'
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(112): warning C4305: '=' : truncation from 'double' to 'float'
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(113): warning C4305: '=' : truncation from 'double' to 'float'
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(115): warning C4305: '=' : truncation from 'double' to 'float'
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(116): warning C4305: '=' : truncation from 'double' to 'float'
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(147): warning C4305: '=' : truncation from 'double' to 'float'
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(214): warning C4305: '=' : truncation from 'double' to 'float'
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(256): warning C4305: '=' : truncation from 'double' to 'float'
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(258): warning C4305: '=' : truncation from 'double' to 'float'
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(497): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(570): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(573): warning C4244: 'initializing' : conversion from 'double' to 'float', possible loss of data
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(575): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(601): warning C4305: '-=' : truncation from 'double' to 'float'
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(796): warning C4244: '=' : conversion from 'int' to 'float', possible loss of data
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(797): warning C4244: '=' : conversion from 'int' to 'float', possible loss of data
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(800): warning C4244: '=' : conversion from 'int' to 'float', possible loss of data
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(801): warning C4244: '=' : conversion from 'int' to 'float', possible loss of data
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(965): warning C4018: '<' : signed/unsigned mismatch
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /I"C:\Users\Sonya\Documents\Code\Cpp\molT-master\Master" /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D WIN32 /D _CRT_SECURE_NO_WARNINGS /D _DEBUG /D _CONSOLE /D _LIB /D _MBCS /Gm /EHsc /RTC1 /MTd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt menu.cpp
+         menu.cpp
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\spa4156b.h(16): warning C4005: 'ARRAYSZ' : macro redefinition
+                 c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.h(18) : see previous definition of 'ARRAYSZ'
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\spa4145b.h(15): warning C4005: 'ARRAYSZ' : macro redefinition
+                 c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\spa4156b.h(16) : see previous definition of 'ARRAYSZ'
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\spa4145b.h(21): warning C4005: 'PRIMARY_ADDR_OF_PNA_SPA' : macro redefinition
+                 c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\spa4156b.h(22) : see previous definition of 'PRIMARY_ADDR_OF_PNA_SPA'
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\menu.cpp(344): warning C4244: '=' : conversion from 'int' to 'float', possible loss of data
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\menu.cpp(329): warning C4101: 'exitV' : unreferenced local variable
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\menu.cpp(408): warning C4244: '=' : conversion from 'int' to 'float', possible loss of data
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\menu.cpp(393): warning C4101: 'exitV' : unreferenced local variable
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\menu.cpp(476): warning C4244: '=' : conversion from 'int' to 'float', possible loss of data
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\menu.cpp(480): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\menu.cpp(461): warning C4101: 'exitV' : unreferenced local variable
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\menu.cpp(550): warning C4244: '=' : conversion from 'int' to 'float', possible loss of data
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\menu.cpp(535): warning C4101: 'exitV' : unreferenced local variable
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\menu.cpp(697): warning C4244: '=' : conversion from 'int' to 'float', possible loss of data
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\menu.cpp(682): warning C4101: 'exitV' : unreferenced local variable
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\menu.cpp(782): warning C4244: '=' : conversion from 'int' to 'float', possible loss of data
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\menu.cpp(857): warning C4244: '=' : conversion from 'int' to 'float', possible loss of data
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\menu.cpp(839): warning C4101: 'exitV' : unreferenced local variable
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\menu.cpp(941): warning C4305: 'argument' : truncation from 'double' to 'float'
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\menu.cpp(949): warning C4244: '=' : conversion from 'int' to 'float', possible loss of data
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\menu.cpp(1033): warning C4305: 'argument' : truncation from 'double' to 'float'
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\menu.cpp(1091): warning C4305: 'argument' : truncation from 'double' to 'float'
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\menu.cpp(1146): warning C4305: 'argument' : truncation from 'double' to 'float'
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\menu.cpp(1351): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\menu.cpp(1352): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\menu.cpp(1360): warning C4244: '=' : conversion from 'int' to 'float', possible loss of data
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\menu.cpp(1448): warning C4244: '=' : conversion from 'int' to 'float', possible loss of data
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\menu.cpp(1459): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\menu.cpp(1460): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\menu.cpp(1468): warning C4244: '=' : conversion from 'int' to 'float', possible loss of data
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\menu.cpp(1578): warning C4244: '=' : conversion from 'int' to 'float', possible loss of data
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\menu.cpp(1589): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\menu.cpp(1598): warning C4244: '=' : conversion from 'int' to 'float', possible loss of data
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\menu.cpp(1708): warning C4244: '=' : conversion from 'int' to 'float', possible loss of data
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\menu.cpp(1810): warning C4244: '=' : conversion from 'int' to 'float', possible loss of data
        Link:
          C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Users\Sonya\Documents\Code_GitVC\Cpp\molT-master\Debug\Master.exe" /INCREMENTAL /NOLOGO "C:\Users\Sonya\Documents\Code_GitVC\Cpp\molT-master\Master\gpib-32.obj" libmat.lib libmex.lib libeng.lib libmx.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:\Users\Sonya\Documents\Code_GitVC\Cpp\molT-master\Debug\Master.pdb" /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\Users\Sonya\Documents\Code_GitVC\Cpp\molT-master\Debug\Master.lib" /MACHINE:X86 Debug\graph.obj
          Debug\K2400.obj
@@ -36,4 +53,4 @@
 
 Build succeeded.
 
-Time Elapsed 00:00:07.48
+Time Elapsed 00:00:08.33
