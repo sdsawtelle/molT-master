@@ -13,7 +13,7 @@
 
 #define TIMEOUT T10s   // Timeout value = 10 seconds
 #define NO_SECONDARY_ADDR 0 // PNA has no Secondary address
-#define PRIMARY_ADDR_OF_DMM 17 // GPIB address of PNA
+#define PRIMARY_ADDR_OF_DMM 12 // GPIB address of PNA
 #define ARRAYSZ 1024
 #define ERRMSGSIZE 128
 #define EOTMODE 1

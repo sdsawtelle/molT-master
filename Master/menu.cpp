@@ -1173,11 +1173,12 @@ void menu::executeYield(SPA4156B SPA, Switchbox switchbox, FILE* outputs[36]){
 	std::cout << "What are user comments for this yield check?\n";
 	std::getline(std::cin, comments);
 	fprintf(outputs[0], "UserComments---%s \n\n", comments.c_str());
+	fprintf(outputs[0], "Device Port Specs, Resistance at 1 mV (Ohms)\n", comments.c_str());
 	for (int devnum = 0; devnum < switchbox.ndev; devnum++){
 		if (switchbox.portSpecs[4][devnum] == "y"){
 			// write device identifier to the output text file, to be followed by the measurement recording
 			FILE* sb_output = outputs[0]; // set the output file stream to yield monitor file
-			fprintf(sb_output, "Device ID# %s R @ 1 mV = ", switchbox.portSpecs[3][devnum].c_str());
+			fprintf(sb_output, "%s,", switchbox.portSpecs[3][devnum].c_str());
 			fflush(sb_output);
 			std::cout << "Device ID# " << switchbox.portSpecs[3][devnum].c_str() << " R @ 1mV = ";
 			switchbox.closeChan(devnum, "SPA"); // all channels except DUT remain shorted to bias port, DUT is connected to relevant inputs

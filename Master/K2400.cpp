@@ -704,6 +704,15 @@ float K2400::DoCurvatureMeasurement(FILE* log_keithley, FILE* reading_log_keithl
 	Sleep(5000);
 	resistance_timely = 0;
 
+	//set up the machinery for timestamping each measurement
+	//set up time keeping apparatus
+	typedef std::chrono::high_resolution_clock Clock;
+	typedef std::chrono::milliseconds milliseconds;
+	Clock::time_point t0;
+	Clock::time_point t1;
+	milliseconds Elapsed;
+	t0 = Clock::now();
+
 	for (; GotTargetResistance(resistance_timely, targ_res_consecutive, volt_stop, voltage_read);){
 
 		sprintf(buffer, ":SOUR:VOLT %f\n", voltage_write);    //create a new string of a command
@@ -713,6 +722,14 @@ float K2400::DoCurvatureMeasurement(FILE* log_keithley, FILE* reading_log_keithl
 		//compute the resistance on basis of measurement from Keithley. Also writes it to output and log
 		// 140422 (sonya) temporarily try just V/I instead of differential resistance computation - see GetResistance function
 		resistance_timely = GetResistance(&diffres, &old_resistance, voltage_read, current_read, reading_log_keithley, output, counter_0);
+
+		// write a timestamp for that measurement
+		//print the resultant resistance to output file
+		t1 = Clock::now();
+		Elapsed = std::chrono::duration_cast<milliseconds>(t1 - t0);
+		fprintf(output, "%f\n", Elapsed);
+		fflush(output);
+
 
 		// set the initial resistance if this is the 20th data point taken (give some time to settle)
 		if (switchcounter == 20){
@@ -1123,7 +1140,7 @@ float K2400::GetResistance(float *diffres, float *old_resistance, float &voltage
 	resistance = voltage_new_num / current_new_num;
 
 	//print the resultant resistance to output file
-	fprintf(output, "%f\n", resistance);
+	fprintf(output, "%f\n ", resistance);
 	fflush(output);
 
 	//the function returns the value of resistance;

@@ -1334,7 +1334,7 @@ int SPA4156B::GetYieldReading(char* buffer, std::string &temporary, FILE* sb_out
 	float resistance = voltage / current;
 	//std::cout << resistance << "\n";
 
-	fprintf(sb_output, "%f ohms\n", resistance);
+	fprintf(sb_output, "%f\n", resistance);
 	fflush(sb_output);
 	std::cout << resistance << " ohms. \n";
 
