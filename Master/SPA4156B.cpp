@@ -96,8 +96,8 @@ void SPA4156B::setParams(int mode){
 
 		// mode 3 = nanowire and gateline yield monitoring (uses SMU1 and SMU2)
 		case 3:{
-			std::cout << "We will use a voltage value of 1mV for sampling yield. \n";
-			configSample(0.001);
+			std::cout << "We will use a voltage value of 50 mV for sampling yield. \n";
+			configSample(0.05);
 			break; }
 
 

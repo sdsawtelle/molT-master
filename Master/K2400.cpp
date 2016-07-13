@@ -220,6 +220,9 @@ float K2400::setParamsEM(int emType){
 		std::cin >> rampup_thresh;
 		std::cout << "What is the percentage resistance difference that will trigger dwelling voltage (float format)?\n";
 		std::cin >> rampback_thresh;
+
+		std::cout << "Please check TempB on Lakeshore and input in Kelvin \n";
+		std::cin >> temperature;
 	}
 
 	return temperature;
@@ -259,6 +262,7 @@ void K2400::initializeEM(int emType){
 		GPIBWrite(pna, ":SENS:CURR:RANGE 30E-3");
 	}
 	if (emType == 1){ //stabilize EM
+
 		GPIBWrite(pna, ":SOUR:VOLT:RANGE 2");
 		GPIBWrite(pna, ":SENS:CURR:RANGE 30e-3");
 	}
@@ -467,11 +471,7 @@ float K2400::emSingle(int devnum, FILE* outputs[36], int emType, float Vstab){
 	// want to keep the temp data in the file with other params
 	FILE* log_keithley = fopen("log.txt", "w+");
 	FILE* reading_log_keithley = fopen("log.txt", "r");
-
 	FILE* output = outputs[devnum];
-	fprintf(output, "DELAY (SEC) %.3f ; RAMP (V) %.4f ; MAX VOLT (V) %.2f ; RAMP RESISTANCE TOLERANCE (low R) (float %%) %.3f ; RAMP RESISTANCE TOLERANCE (low-med R) (float %%) %.3f ; RAMP RESISTANCE TOLERANCE (med-high R) (float %%) %.3f ; RAMP RESISTANCE TOLERANCE (high R) (float %%) %.3f ; TARGET RESISTANCE (Ohms) %.9f ; TARGET RESISTANCE TOLERANCE (float %%) %.3f ; RAMP DOWN (V) %.3f ; NUM CONSEC % HITS (low R) %i ; NUM CONSEC % HITS (low-med R) %i ;  NUM CONSEC % HITS (med-high R) %i ; NUM CONSEC % HITS (high R) %i ; NUM CONSEC NDR (low R) %i ; NUM CONSEC % HITS (low-med R) %i ; NUM CONSEC % HITS (med-high R) %i ; NUM CONSEC NDR (high R) %i ; LOW/LOW-MED SWITCH RESISTANCE (ohms) %.9f ; LOW-MED/MED-HIGH SWITCH RESISTANCE (ohms) %.9f ; MED-HIGH/HIGH SWITCH RESISTANCE (ohms) %.9f ;  INTEGRATION TIME (PLC) %i ; RAMPDOWN DWELL (msec/mV) %.4i ; TEMPERATURE (K) %.4f \n ", delay, volt_ramp, volt_stop, resistance_tolerance[0], resistance_tolerance[1], resistance_tolerance[2], resistance_tolerance[3], target_resistance, target_resistance_tolerance, volt_down, ntrigger[0], ntrigger[1], ntrigger[2], ntrigger[3], nnegres[0], nnegres[1], nnegres[2], nnegres[3], res_switch[0], res_switch[1], res_switch[2], nplc, rampdown_dwell, temperature);
-	fprintf(output, "voltage,current,resistance \n");
-	fflush(output);
 
 	float exitV = 0;
 
@@ -480,15 +480,30 @@ float K2400::emSingle(int devnum, FILE* outputs[36], int emType, float Vstab){
 	std::cout << "=======================================================================\n";
 
 	if (emType == 0){ // normal EM
+		//write header
+		fprintf(output, "DELAY (SEC) %.3f ; RAMP (V) %.4f ; MAX VOLT (V) %.2f ; RAMP RESISTANCE TOLERANCE (low R) (float %%) %.3f ; RAMP RESISTANCE TOLERANCE (low-med R) (float %%) %.3f ; RAMP RESISTANCE TOLERANCE (med-high R) (float %%) %.3f ; RAMP RESISTANCE TOLERANCE (high R) (float %%) %.3f ; TARGET RESISTANCE (Ohms) %.9f ; TARGET RESISTANCE TOLERANCE (float %%) %.3f ; RAMP DOWN (V) %.3f ; NUM CONSEC % HITS (low R) %i ; NUM CONSEC % HITS (low-med R) %i ;  NUM CONSEC % HITS (med-high R) %i ; NUM CONSEC % HITS (high R) %i ; NUM CONSEC NDR (low R) %i ; NUM CONSEC % HITS (low-med R) %i ; NUM CONSEC % HITS (med-high R) %i ; NUM CONSEC NDR (high R) %i ; LOW/LOW-MED SWITCH RESISTANCE (ohms) %.9f ; LOW-MED/MED-HIGH SWITCH RESISTANCE (ohms) %.9f ; MED-HIGH/HIGH SWITCH RESISTANCE (ohms) %.9f ;  INTEGRATION TIME (PLC) %i ; RAMPDOWN DWELL (msec/mV) %.4i ; TEMPERATURE (K) %.4f \n ", delay, volt_ramp, volt_stop, resistance_tolerance[0], resistance_tolerance[1], resistance_tolerance[2], resistance_tolerance[3], target_resistance, target_resistance_tolerance, volt_down, ntrigger[0], ntrigger[1], ntrigger[2], ntrigger[3], nnegres[0], nnegres[1], nnegres[2], nnegres[3], res_switch[0], res_switch[1], res_switch[2], nplc, rampdown_dwell, temperature);
+		fprintf(output, "voltage,current,resistance \n");
+		fflush(output);
+		//do measurement
 		exitV = DoMeasurement(log_keithley, reading_log_keithley, output, delay); //Here the real measurement is done. See comments within the function
 	}
 	if (emType == 1){ // EM followed by stabilization monitoring
+		//write header
+		fprintf(output, "DELAY (SEC) %.3f ; RAMP (V) %.4f ; MAX VOLT (V) %.2f ; RAMP RESISTANCE TOLERANCE (low R) (float %%) %.3f ; RAMP RESISTANCE TOLERANCE (low-med R) (float %%) %.3f ; RAMP RESISTANCE TOLERANCE (med-high R) (float %%) %.3f ; RAMP RESISTANCE TOLERANCE (high R) (float %%) %.3f ; TARGET RESISTANCE (Ohms) %.9f ; TARGET RESISTANCE TOLERANCE (float %%) %.3f ; RAMP DOWN (V) %.3f ; NUM CONSEC % HITS (low R) %i ; NUM CONSEC % HITS (low-med R) %i ;  NUM CONSEC % HITS (med-high R) %i ; NUM CONSEC % HITS (high R) %i ; NUM CONSEC NDR (low R) %i ; NUM CONSEC % HITS (low-med R) %i ; NUM CONSEC % HITS (med-high R) %i ; NUM CONSEC NDR (high R) %i ; LOW/LOW-MED SWITCH RESISTANCE (ohms) %.9f ; LOW-MED/MED-HIGH SWITCH RESISTANCE (ohms) %.9f ; MED-HIGH/HIGH SWITCH RESISTANCE (ohms) %.9f ;  INTEGRATION TIME (PLC) %i ; RAMPDOWN DWELL (msec/mV) %.4i ; TEMPERATURE (K) %.4f \n ", delay, volt_ramp, volt_stop, resistance_tolerance[0], resistance_tolerance[1], resistance_tolerance[2], resistance_tolerance[3], target_resistance, target_resistance_tolerance, volt_down, ntrigger[0], ntrigger[1], ntrigger[2], ntrigger[3], nnegres[0], nnegres[1], nnegres[2], nnegres[3], res_switch[0], res_switch[1], res_switch[2], nplc, rampdown_dwell, temperature);
+		fprintf(output, "voltage,current,resistance \n");
+		fflush(output);
 		float stabstep;
 		std::cout << "By how much should we increment the stabilizing voltage (in Volts)?\n (SAY '0' FOR PURE STABILIZATION MEASUREMENTS)\n";
 		std::cin >> stabstep;
+		//do measurement
 		exitV = DoStabilizeMeasurement(log_keithley, reading_log_keithley, output, delay, Vstab, stabstep); //Here the real measurement is done. See comments within the function
 	}
 	if (emType == 2){ // EM designed to pull out dR/dt exactly at EM onset
+		//write header
+		fprintf(output, "TARGET RESISTANCE (Ohms) %.9f ; VOLTAGE STEP (V) %.3f ; %% CHANGE THAT PREVENTS STEP (float %%) %.3f ; %% CHANGE THAT TRIGGERS DWELL (float %%) %.3f ; TEMPERATURE (K) %.4f\n", target_resistance, volt_ramp, rampup_thresh, rampback_thresh, temperature);
+		fprintf(output, "time(ms),voltage(V),current(A),resistance(Ohms) \n");
+		fflush(output);
+		//do measurement
 		exitV = DoCurvatureMeasurement(log_keithley, reading_log_keithley, output, delay); //Here the real measurement is done. See comments within the function
 	}
 
@@ -713,7 +728,17 @@ float K2400::DoCurvatureMeasurement(FILE* log_keithley, FILE* reading_log_keithl
 	milliseconds Elapsed;
 	t0 = Clock::now();
 
+	// initialize the variable that holds resistance check value for dwelling confirmation
+	float rescheck = 100;
+
 	for (; GotTargetResistance(resistance_timely, targ_res_consecutive, volt_stop, voltage_read);){
+
+		// write a timestamp for that measurement
+		//print the resultant resistance to output file
+		t1 = Clock::now();
+		Elapsed = std::chrono::duration_cast<milliseconds>(t1 - t0);
+		fprintf(output, "%i, ", Elapsed.count());
+		fflush(output);
 
 		sprintf(buffer, ":SOUR:VOLT %f\n", voltage_write);    //create a new string of a command
 		GPIBWrite(pna, buffer);     //and send it to the source (Keithley)
@@ -722,13 +747,6 @@ float K2400::DoCurvatureMeasurement(FILE* log_keithley, FILE* reading_log_keithl
 		//compute the resistance on basis of measurement from Keithley. Also writes it to output and log
 		// 140422 (sonya) temporarily try just V/I instead of differential resistance computation - see GetResistance function
 		resistance_timely = GetResistance(&diffres, &old_resistance, voltage_read, current_read, reading_log_keithley, output, counter_0);
-
-		// write a timestamp for that measurement
-		//print the resultant resistance to output file
-		t1 = Clock::now();
-		Elapsed = std::chrono::duration_cast<milliseconds>(t1 - t0);
-		fprintf(output, "%f\n", Elapsed);
-		fflush(output);
 
 
 		// set the initial resistance if this is the 20th data point taken (give some time to settle)
@@ -772,13 +790,15 @@ float K2400::DoCurvatureMeasurement(FILE* log_keithley, FILE* reading_log_keithl
 		////	}
 		////}
 	
-		// More complicated dwell routine - dwells on four consecutive increasing R's, but then checks again after another 15 measurements at that voltage to see if it was a faulty dwell.
+		// old algo: 5 points at each voltage and look for consecutively increasing
+
+		//// More complicated dwell routine - dwells on four consecutive increasing R's, but then checks again after another 15 measurements at that voltage to see if it was a faulty dwell.
 		if (counter_1 < 5){
 			voltage_write = voltage_write; // always take at least five measurements at a given voltage
 			std::cout << "counter_1 = " << counter_1 << " , bestString = " << bestString << ".\n";
 		}
 		else if (counter_1 == 5){		// once five measurements are taken, check whether to stay at this voltage
-			if (bestString < 4){		// if there were less than four consecutive increasing R measurements then ramp up V, otherwise dwell at V for another measurement
+			if (bestString < 3){		// if there were less than four consecutive increasing R measurements then ramp up V, otherwise dwell at V for another measurement
 				voltage_write += volt_ramp;
 				counter_1 = 0;
 				counter_2 = 0;
@@ -792,15 +812,31 @@ float K2400::DoCurvatureMeasurement(FILE* log_keithley, FILE* reading_log_keithl
 				bestString = 0;  // reset bestString to prepare for checking whether this a false dwell
 				std::cout << "DWELL TRIGGERED: Resistance is " << resistance_timely << " ohms.\n";
 				std::cout << "counter_1 = " << counter_1 << " , bestString = " << bestString << ".\n";
+				rescheck = resistance_timely + 0.05;
 			}
 		}
-		else if (counter_1 > 5 && counter_1 < 15){		// always take at least 10 more measurements at the V where a dwell is initiated
+		else if (counter_1 > 5 && counter_1 < 10){		// always take at least 5 more measurements at the V where a dwell is initiated
 			voltage_write = voltage_write;
-			std::cout << "DWELL CHECK: Resistance is " << resistance_timely << " ohms.\n";
+			std::cout << "DWELL CHECK 1: Resistance is " << resistance_timely << " ohms.\n";
 			std::cout << "counter_1 = " << counter_1 << " , bestString = " << bestString << ".\n";
 		}
-		else if (counter_1 == 15){		// after 10 extra measurements check whether it was a false dwell or if we really do have EM
-			if (bestString < 5){
+		else if (counter_1 == 10){		// after 5 extra measurements check whether it was a false dwell or if we really do have EM
+			if (bestString < 3){
+				voltage_write += volt_ramp;
+				counter_1 = 0;
+				counter_2 = 0;
+				bestString = 0;
+				std::cout << "FALSE DWELL!\n";
+				std::cout << "counter_1 = " << counter_1 << " , bestString = " << bestString << ".\n";
+			}
+			else {
+				voltage_write = voltage_write;
+				std::cout << "DWELL CHECK #1 PASSED: Resistance is " << resistance_timely << " ohms.\n";
+				std::cout << "counter_1 = " << counter_1 << " , bestString = " << bestString << ".\n";
+				bestString = 0;
+				counter_2 = 0;
+			}
+			/*if (resistance_timely < rescheck){
 				voltage_write += volt_ramp;
 				counter_1 = 0;
 				counter_2 = 0;
@@ -812,6 +848,89 @@ float K2400::DoCurvatureMeasurement(FILE* log_keithley, FILE* reading_log_keithl
 				voltage_write = voltage_write;
 				std::cout << "DWELL CONFIRMED: Resistance is " << resistance_timely << " ohms.\n";
 				std::cout << "counter_1 = " << counter_1 << " , bestString = " << bestString << ".\n";
+			}*/
+		}
+		else if (counter_1 > 10 && counter_1 < 15){		// always take at least 5 more measurements at the V where a dwell is initiated
+			voltage_write = voltage_write;
+			std::cout << "DWELL CHECK 2: Resistance is " << resistance_timely << " ohms.\n";
+			std::cout << "counter_1 = " << counter_1 << " , bestString = " << bestString << ".\n";
+		}
+		else if (counter_1 == 15){		// after 5 extra measurements check whether it was a false dwell or if we really do have EM
+			if (bestString < 3){
+				voltage_write += volt_ramp;
+				counter_1 = 0;
+				counter_2 = 0;
+				bestString = 0;
+				std::cout << "FALSE DWELL!\n";
+				std::cout << "counter_1 = " << counter_1 << " , bestString = " << bestString << ".\n";
+			}
+			else {
+				voltage_write = voltage_write;
+				std::cout << "DWELL CHECK #2 PASSED: Resistance is " << resistance_timely << " ohms.\n";
+				std::cout << "counter_1 = " << counter_1 << " , bestString = " << bestString << ".\n";
+				rescheck = resistance_timely + 0.3;
+			}
+		}
+		else if (counter_1 > 15 && counter_1 < 110){		// always take at least 100 more measurements at the V where a dwell is initiated
+			voltage_write = voltage_write;
+			std::cout << "DWELL CHECK 3: Resistance is " << resistance_timely << " ohms.\n";
+			std::cout << "counter_1 = " << counter_1 << " , bestString = " << bestString << ".\n";
+		}
+		else if (counter_1 == 110){		// after 25 extra measurements check whether it was a false dwell or if we really do have EM
+			if (resistance_timely <= rescheck){
+				voltage_write += volt_ramp;
+				counter_1 = 0;
+				counter_2 = 0;
+				bestString = 0;
+				std::cout << "FALSE DWELL!\n";
+				std::cout << "counter_1 = " << counter_1 << " , bestString = " << bestString << ".\n";
+			}
+			else {
+				voltage_write = voltage_write;
+				std::cout << "DWELL CHECK #3 PASSED: Resistance is " << resistance_timely << " ohms.\n";
+				std::cout << "counter_1 = " << counter_1 << " , bestString = " << bestString << ".\n";
+				rescheck = resistance_timely + 0.3;
+			}
+		}
+		else if (counter_1 > 110 && counter_1 < 220){		// always take at least 100 more measurements at the V where a dwell is initiated
+			voltage_write = voltage_write;
+			std::cout << "DWELL CHECK #4: Resistance is " << resistance_timely << " ohms.\n";
+			std::cout << "counter_1 = " << counter_1 << " , bestString = " << bestString << ".\n";
+		}
+		else if (counter_1 == 220){		// after 100 extra measurements check whether it was a false dwell or if we really do have EM
+			if (resistance_timely <= rescheck){
+				voltage_write += volt_ramp;
+				counter_1 = 0;
+				counter_2 = 0;
+				bestString = 0;
+				std::cout << "FALSE DWELL!\n";
+				std::cout << "counter_1 = " << counter_1 << " , bestString = " << bestString << ".\n";
+			}
+			else {
+				voltage_write = voltage_write;
+				std::cout << "DWELL CHECK #4 PASSED: Resistance is " << resistance_timely << " ohms.\n";
+				std::cout << "counter_1 = " << counter_1 << " , bestString = " << bestString << ".\n";
+				rescheck = resistance_timely + 0.3;
+			}
+		}
+		else if (counter_1 > 220 && counter_1 < 320){		// always take at least 100 more measurements at the V where a dwell is initiated
+			voltage_write = voltage_write;
+			std::cout << "DWELL CHECK #5: Resistance is " << resistance_timely << " ohms.\n";
+			std::cout << "counter_1 = " << counter_1 << " , bestString = " << bestString << ".\n";
+		}
+		else if (counter_1 == 320){		// after 100 extra measurements check whether it was a false dwell or if we really do have EM
+			if (resistance_timely <= rescheck){
+				voltage_write += volt_ramp;
+				counter_1 = 0;
+				counter_2 = 0;
+				bestString = 0;
+				std::cout << "FALSE DWELL!\n";
+				std::cout << "counter_1 = " << counter_1 << " , bestString = " << bestString << ".\n";
+			}
+			else {
+				voltage_write = voltage_write;
+				std::cout << "DWELL CHECK #5 PASSED: Resistance is " << resistance_timely << " ohms.\n";
+				std::cout << "counter_1 = " << counter_1 << " , bestString = " << bestString << ".\n";
 			}
 		}
 		else {
@@ -819,6 +938,114 @@ float K2400::DoCurvatureMeasurement(FILE* log_keithley, FILE* reading_log_keithl
 			std::cout << "DWELLING: Resistance is " << resistance_timely << " ohms.\n";
 			std::cout << "counter_1 = " << counter_1 << " , bestString = " << bestString << ".\n";
 		}
+
+
+		// another old algo: 25 points at each, then 100 point dwell check, then 500 point dwell check
+
+		//// 25 points at each voltage, looking for certain absolute R increase, several increasingly long dwell checks
+		//if (counter_1 < 25){
+		//	voltage_write = voltage_write; // always take at least 25 measurements at a given voltage
+		//	if (counter_1 == 3){
+		//		rescheck = resistance_timely + 0.2;
+		//	}
+		//}
+		//else if (counter_1 == 25){		// once five measurements are taken, check whether to stay at this voltage
+		//	if (resistance_timely < rescheck){		// if R hasn't increased enough ramp up V, otherwise dwell at V for another measurement
+		//		voltage_write += volt_ramp;
+		//		// reset counter for # of measurements and initialize to the new resistance check value
+		//		counter_1 = 0;
+		//		rescheck = resistance_timely + 0.2;
+		//		std::cout << "Resistance is " << resistance_timely << " ohms. Step up to " << voltage_write << " V.\n";
+		//	}
+		//	else {
+		//		voltage_write = voltage_write;
+		//		std::cout << "DWELL TRIGGERED: Resistance is " << resistance_timely << " ohms.\n";
+		//		rescheck = resistance_timely + 0.4;
+		//	}
+		//}
+		//else if (counter_1 > 25 && counter_1 < 100){		// always take at least 75 more measurements at the V where a dwell is initiated
+		//	voltage_write = voltage_write;
+		//	std::cout << "DWELL CHECK 1: Resistance is " << resistance_timely << " ohms.\n";
+		//}
+		//else if (counter_1 == 100){		// after 75 extra measurements check whether it was a false dwell or if we really do have EM
+		//	if (resistance_timely < rescheck){
+		//		voltage_write += 0.001;
+		//		// reset counter for # of measurements and initialize to the new resistance check value
+		//		counter_1 = 0;
+		//		rescheck = resistance_timely + 0.2;
+		//		std::cout << "DWELL CHECK #1 FAILED!\n";
+		//	}
+		//	else {
+		//		voltage_write = voltage_write;
+		//		std::cout << "DWELL CHECK #1 PASSED: Resistance is " << resistance_timely << " ohms.\n";
+		//		rescheck = resistance_timely + 2;
+		//	}
+		//}
+		//else if (counter_1 > 100 && counter_1 < 500){		// always take at least 400 more measurements at the V where a dwell is initiated
+		//	voltage_write = voltage_write;
+		//	std::cout << "DWELL CHECK 2: Resistance is " << resistance_timely << " ohms.\n";
+		//}
+		//else if (counter_1 == 500){		// after 25 extra measurements check whether it was a false dwell or if we really do have EM
+		//	if (resistance_timely <= rescheck){
+		//		voltage_write += 0.001;
+		//		// reset counter for # of measurements and initialize to the new resistance check value
+		//		counter_1 = 0;
+		//		rescheck = resistance_timely + 0.2;
+		//		std::cout << "DWELL CHECK #2 FAILED!\n";
+		//	}
+		//	else {
+		//		voltage_write = voltage_write;
+		//		std::cout << "DWELL CHECK #2 PASSED: Resistance is " << resistance_timely << " ohms.\n";
+		//	}
+		//}
+		//else {
+		//	voltage_write = voltage_write;
+		//	std::cout << "DWELLING: Resistance is " << resistance_timely << " ohms.\n";
+		//}
+
+
+		// 100 points at each voltage, dwell check is Rinc > some value, never dwell forever just keep checking dwell check every 100 points
+
+		//if (counter_1 < 100){
+		//	voltage_write = voltage_write; // always take at least 25 measurements at a given voltage
+		//	if (counter_1 == 5){
+		//		rescheck = resistance_timely + 0.5;
+		//	}
+		//}
+		//else if (counter_1 == 100){		// once five measurements are taken, check whether to stay at this voltage
+		//	if (resistance_timely < rescheck){		// if R hasn't increased enough ramp up V, otherwise dwell at V for another measurement
+		//		voltage_write += volt_ramp;
+		//		// reset counter for # of measurements and initialize to the new resistance check value
+		//		counter_1 = 0;
+		//		std::cout << "RAMP UP: Resistance is " << resistance_timely << " ohms. Step up to " << voltage_write << " V.\n";
+		//	}
+		//	else {
+		//		voltage_write = voltage_write;
+		//		counter_1 = 0;
+		//		std::cout << "DWELL: Resistance is " << resistance_timely << " ohms.\n";
+		//	}
+		//}
+		//
+		//else {
+		//	voltage_write = voltage_write;
+		//	std::cout << "DWELLING: Resistance is " << resistance_timely << " ohms.\n";
+		//}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
