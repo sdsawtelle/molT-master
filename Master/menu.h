@@ -17,10 +17,13 @@ public:
 	void menu_start(K2400 keithley, SPA4156B SPA, Switchbox switchbox);
 	std::string chip_ID;
 	std::string emailAddress;
+	std::string ft_ID;
 	void SendMail(std::string emailAddress);
 protected:
 private:
 	void executeEM(K2400 keithley, SPA4156B SPA, Switchbox switchbox, FILE* outputs[36]);
+	void executeRjEM(K2400 keithley, SPA4156B SPA, Switchbox switchbox, FILE* outputs[36]);
+	void executeAlternatingEM(K2400 keithley, SPA4156B SPA, Switchbox switchbox, FILE* outputs[36]);
 	void executeStabilizeEM(K2400 keithley, SPA4156B SPA, Switchbox switchbox, FILE* outputs[36]);
 	void executeCurvatureEM(K2400 keithley, SPA4156B SPA, Switchbox switchbox, FILE* outputs[36]);
 	void executeHEAL(K2400 keithley, SPA4156B SPA, Switchbox switchbox, FILE* outputs[36]);

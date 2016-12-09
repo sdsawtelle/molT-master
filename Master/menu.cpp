@@ -25,13 +25,14 @@ void menu::menu_start(K2400 keithley, SPA4156B SPA, Switchbox switchbox){
 
 	// get the port specs for all the devices on chip
 	switchbox.getAllPorts(); // reads in all the pad specifications, reformats them for switchbox, and creates output file streams
-	
-	//get the email address for the program user
-	//get the chip ID
-	std::cout << "What is the email address to contact? \n";
-	std::cin >> emailAddress;
+
+	emailAddress = "sdsawtelle@gmail.com";
+
 	std::cout << "What is the ID for this chip?\n";
 	std::cin >> chip_ID;
+	std::cout << "What is the Feed-thru ID for this Group?\n";
+	std::cin >> ft_ID;
+	switchbox.ft_ID = ft_ID;
 
 	int choice = 0;
 	while (1){
@@ -81,7 +82,11 @@ void menu::menu_start(K2400 keithley, SPA4156B SPA, Switchbox switchbox){
 
 		std::cout << "	 (29)  Execute CURVATURE DETECTION EM of a group of devices. \n\n";
 
-		std::cout << "   (30)  EXIT \n\n";
+		std::cout << "	 (30)  Execute ALTERNATING POLARITY EM of a group of devices. \n\n";
+
+		std::cout << "   (31)  Execute RJ EM of a group of devices. \n\n";
+
+		std::cout << "   (32)  EXIT \n\n";
 
 
 		std::cout << " ============================ Please enter a command:  ";
@@ -285,7 +290,21 @@ void menu::menu_start(K2400 keithley, SPA4156B SPA, Switchbox switchbox){
 				   executeCurvatureEM(keithley, SPA, switchbox, outputs); // performs sequential EM runs on the devices listed in the input file, writing EM IV's to appropriate outputs.
 				   closeFiles(ymflag, switchbox.ndev, outputs, switchbox); // close all the output files
 				   break; }
-		case 30:
+		case 30:{
+					// Execute ALTERNATING POLARITY EM of devices\n";
+					switchbox.getPorts(ymflag, outputs); // reads in all the pad specifications and mark which devices are to be tested
+					keithley.setParamsEM(3); // sets the EM parameters (some user-input).
+					executeAlternatingEM(keithley, SPA, switchbox, outputs); // performs sequential EM runs on the devices listed in the input file, writing EM IV's to appropriate outputs.
+					closeFiles(ymflag, switchbox.ndev, outputs, switchbox); // close all the output files
+					break; }
+		case 31:{
+				   // Execute RJ EM ON A GROUP of devices\n";
+				   switchbox.getPorts(ymflag, outputs); // reads in all the pad specifications and mark which devices are to be tested
+				   keithley.setParamsEM(4); // sets the EM parameters (some user-input).
+				   executeRjEM(keithley, SPA, switchbox, outputs); // performs sequential EM runs on the devices listed in the input file, writing EM IV's to appropriate outputs.
+				   closeFiles(ymflag, switchbox.ndev, outputs, switchbox); // close all the output files
+				   break; }
+		case 32:
 			goto EXIT;
 			break;
 
@@ -327,13 +346,14 @@ void menu::executeEM(K2400 keithley, SPA4156B SPA, Switchbox switchbox, FILE* ou
 	minutes Elapsed;
 
 	float exitV;
+	keithley.initializeEM(0); //initialize to a range appropriate to curvature EM measurements. 
 
 
 	for (int devnum = 0; devnum < switchbox.ndev; devnum++){
 		if (switchbox.portSpecs[4][devnum] == "y"){
 			switchbox.closeChan(devnum, "keithley"); // all channels except DUT remain shorted to bias port, DUT is connected to relevant inputs
 			t0 = Clock::now();
-			switchbox.exitSummary[0][devnum] = keithley.emSingle(devnum, outputs, 0, 0); // writes IV data to output file. keithley will set his output to 0V after finishing EM run
+			switchbox.exitSummary[0][devnum] = keithley.emSingle(devnum, outputs, 0, 0, switchbox); // writes IV data to output file. keithley will set his output to 0V after finishing EM run
 			t1 = Clock::now();
 			Elapsed = std::chrono::duration_cast<minutes>(t1 - t0);
 			std::cout << "Device ID# " << switchbox.portSpecs[3][devnum].c_str() << " has completed active EM! \n";
@@ -350,7 +370,138 @@ void menu::executeEM(K2400 keithley, SPA4156B SPA, Switchbox switchbox, FILE* ou
 	char buffer[1024];
 	for (int devnum = 0; devnum < switchbox.ndev; devnum++){
 		if (switchbox.portSpecs[4][devnum] == "y"){
-			sprintf(buffer, "%s, %s, EM, %.3f, %.3f, %.3f, %.1f\n", chip_ID.c_str(), switchbox.portSpecs[3][devnum].c_str(), temperature, switchbox.exitSummary[0][devnum], switchbox.exitSummary[1][devnum], switchbox.exitSummary[2][devnum]);
+			sprintf(buffer, "%s, %s_%s, EM, %.3f, %.3f, %.3f, %.1f\n", chip_ID.c_str(), ft_ID.c_str(), switchbox.portSpecs[3][devnum].c_str(), temperature, switchbox.exitSummary[0][devnum], switchbox.exitSummary[1][devnum], switchbox.exitSummary[2][devnum]);
+			fprintf(summary, buffer);
+		}
+	}
+	fclose(summary);
+
+	SendMail(emailAddress);
+
+}
+
+void menu::executeRjEM(K2400 keithley, SPA4156B SPA, Switchbox switchbox, FILE* outputs[36]){
+
+	float temperature;
+	std::cout << "Please check TempB on Lakeshore and input in Kelvin \n";
+	std::cin >> temperature;
+
+	// get a filename and open a file that will be used to write the summary info to
+	std::string file_summary;
+	std::cout << "What is the filename stem to use for the EM Outcome Summary? \n";
+	std::cin >> file_summary;
+	char filebuffer[1024] = "";
+	sprintf(filebuffer, "%s_%s_EMSummary.txt", file_summary.c_str(), chip_ID.c_str());
+	FILE *summary = fopen(filebuffer, "w+");
+	if (summary == NULL) { // check that fopen worked correctly
+		std::cout << "fopen has failed for the output file " << filebuffer << "\n";
+	}
+
+
+	std::cout << "=======================================================================\n";
+	std::cout << "Press the 'F12' key to interrupt active EM on a device...\n";
+	std::cout << "=======================================================================\n";
+	Sleep(500);
+
+	typedef std::chrono::high_resolution_clock Clock;
+	Clock::time_point t0;
+	Clock::time_point t1;
+
+	typedef std::chrono::minutes minutes;
+	minutes Elapsed;
+
+	float exitV;
+	keithley.initializeEM(4); //initialize to a range appropriate to curvature EM measurements. 
+
+
+	for (int devnum = 0; devnum < switchbox.ndev; devnum++){
+		if (switchbox.portSpecs[4][devnum] == "y"){
+			switchbox.closeChan(devnum, "keithley"); // all channels except DUT remain shorted to bias port, DUT is connected to relevant inputs
+			t0 = Clock::now();
+			switchbox.exitSummary[0][devnum] = keithley.RjemSingle(devnum, outputs, switchbox); // writes IV data to output file. keithley will set his output to 0V after finishing EM run
+			t1 = Clock::now();
+			Elapsed = std::chrono::duration_cast<minutes>(t1 - t0);
+			std::cout << "Device ID# " << switchbox.portSpecs[3][devnum].c_str() << " has completed active EM! \n";
+			std::cout << "Elapsed time of electromigration was " << Elapsed.count() << " minutes. \n";
+			std::cout << "Exit voltage of the electromigration was " << switchbox.exitSummary[0][devnum] << " V.\n";
+			switchbox.openChan(devnum, "keithley", 1); // get back to the state of all output ports shorted to keithley ground
+			switchbox.exitSummary[1][devnum] = executeGapYield(devnum, SPA, switchbox); // will print out the actual resistance sampled at 100mV 
+			switchbox.exitSummary[2][devnum] = Elapsed.count();
+			std::cout << "---------------------------------------------------\n";
+		}
+	}
+
+	fprintf(summary, "Chip ID, Device Ports, Run Type, Temperature (K), EM exit V (V), R @ 100mV after EM (ohms), Elapsed Time of EM (min))\n"); // header
+	char buffer[1024];
+	for (int devnum = 0; devnum < switchbox.ndev; devnum++){
+		if (switchbox.portSpecs[4][devnum] == "y"){
+			sprintf(buffer, "%s, %s_%s, EM, %.3f, %.3f, %.3f, %.1f\n", chip_ID.c_str(), ft_ID.c_str(), switchbox.portSpecs[3][devnum].c_str(), temperature, switchbox.exitSummary[0][devnum], switchbox.exitSummary[1][devnum], switchbox.exitSummary[2][devnum]);
+			fprintf(summary, buffer);
+		}
+	}
+	fclose(summary);
+
+	SendMail(emailAddress);
+
+}
+
+
+void menu::executeAlternatingEM(K2400 keithley, SPA4156B SPA, Switchbox switchbox, FILE* outputs[36]){
+
+	float temperature;
+	std::cout << "Please check TempB on Lakeshore and input in Kelvin \n";
+	std::cin >> temperature;
+
+	// get a filename and open a file that will be used to write the summary info to
+	std::string file_summary;
+	std::cout << "What is the filename stem to use for the EM Outcome Summary? \n";
+	std::cin >> file_summary;
+	char filebuffer[1024] = "";
+	sprintf(filebuffer, "%s_%s_EMSummary.txt", file_summary.c_str(), chip_ID.c_str());
+	FILE *summary = fopen(filebuffer, "w+");
+	if (summary == NULL) { // check that fopen worked correctly
+		std::cout << "fopen has failed for the output file " << filebuffer << "\n";
+	}
+
+
+	std::cout << "=======================================================================\n";
+	std::cout << "Press the 'F12' key to interrupt active EM on a device...\n";
+	std::cout << "=======================================================================\n";
+	Sleep(500);
+
+	typedef std::chrono::high_resolution_clock Clock;
+	Clock::time_point t0;
+	Clock::time_point t1;
+
+	typedef std::chrono::minutes minutes;
+	minutes Elapsed;
+
+	float exitV;
+	keithley.initializeEM(3); 
+
+
+	for (int devnum = 0; devnum < switchbox.ndev; devnum++){
+		if (switchbox.portSpecs[4][devnum] == "y"){
+			switchbox.closeChan(devnum, "keithley"); // all channels except DUT remain shorted to bias port, DUT is connected to relevant inputs
+			t0 = Clock::now();
+			switchbox.exitSummary[0][devnum] = keithley.emSingle(devnum, outputs, 3, 0, switchbox); // writes IV data to output file. keithley will set his output to 0V after finishing EM run
+			t1 = Clock::now();
+			Elapsed = std::chrono::duration_cast<minutes>(t1 - t0);
+			std::cout << "Device ID# " << switchbox.portSpecs[3][devnum].c_str() << " has completed active EM! \n";
+			std::cout << "Elapsed time of electromigration was " << Elapsed.count() << " minutes. \n";
+			std::cout << "Exit voltage of the electromigration was " << switchbox.exitSummary[0][devnum] << " V.\n";
+			switchbox.openChan(devnum, "keithley", 1); // get back to the state of all output ports shorted to keithley ground
+			switchbox.exitSummary[1][devnum] = executeGapYield(devnum, SPA, switchbox); // will print out the actual resistance sampled at 100mV 
+			switchbox.exitSummary[2][devnum] = Elapsed.count();
+			std::cout << "---------------------------------------------------\n";
+		}
+	}
+
+	fprintf(summary, "Chip ID, Device Ports, Run Type, Temperature (K), EM exit V (V), R @ 100mV after EM (ohms), Elapsed Time of EM (min))\n"); // header
+	char buffer[1024];
+	for (int devnum = 0; devnum < switchbox.ndev; devnum++){
+		if (switchbox.portSpecs[4][devnum] == "y"){
+			sprintf(buffer, "%s, %s_%s, EM, %.3f, %.3f, %.3f, %.1f\n", chip_ID.c_str(), ft_ID.c_str(), switchbox.portSpecs[3][devnum].c_str(), temperature, switchbox.exitSummary[0][devnum], switchbox.exitSummary[1][devnum], switchbox.exitSummary[2][devnum]);
 			fprintf(summary, buffer);
 		}
 	}
@@ -397,7 +548,7 @@ void menu::executeCurvatureEM(K2400 keithley, SPA4156B SPA, Switchbox switchbox,
 		if (switchbox.portSpecs[4][devnum] == "y"){
 			switchbox.closeChan(devnum, "keithley"); // all channels except DUT remain shorted to bias port, DUT is connected to relevant inputs
 			t0 = Clock::now();
-			switchbox.exitSummary[0][devnum] = keithley.emSingle(devnum, outputs, 2, 0); // writes IV data to output file. keithley will set his output to 0V after finishing EM run
+			switchbox.exitSummary[0][devnum] = keithley.emSingle(devnum, outputs, 2, 0, switchbox); // writes IV data to output file. keithley will set his output to 0V after finishing EM run
 			t1 = Clock::now();
 			Elapsed = std::chrono::duration_cast<minutes>(t1 - t0);
 			std::cout << "Device ID# " << switchbox.portSpecs[3][devnum].c_str() << " has completed active Curvature EM! \n";
@@ -414,7 +565,7 @@ void menu::executeCurvatureEM(K2400 keithley, SPA4156B SPA, Switchbox switchbox,
 	char buffer[1024];
 	for (int devnum = 0; devnum < switchbox.ndev; devnum++){
 		if (switchbox.portSpecs[4][devnum] == "y"){
-			sprintf(buffer, "%s, %s, EMC, %.3f, %.3f, %.3f, %.1f\n", chip_ID.c_str(), switchbox.portSpecs[3][devnum].c_str(), temperature, switchbox.exitSummary[0][devnum], switchbox.exitSummary[1][devnum], switchbox.exitSummary[2][devnum]);
+			sprintf(buffer, "%s, %s_%s, EMC, %.3f, %.3f, %.3f, %.1f\n", chip_ID.c_str(), ft_ID.c_str(), switchbox.portSpecs[3][devnum].c_str(), temperature, switchbox.exitSummary[0][devnum], switchbox.exitSummary[1][devnum], switchbox.exitSummary[2][devnum]);
 			fprintf(summary, buffer);
 		}
 	}
@@ -465,7 +616,7 @@ void menu::executeStabilizeEM(K2400 keithley, SPA4156B SPA, Switchbox switchbox,
 		if (switchbox.portSpecs[4][devnum] == "y"){
 			switchbox.closeChan(devnum, "keithley"); // all channels except DUT remain shorted to bias port, DUT is connected to relevant inputs
 			t0 = Clock::now();
-			switchbox.exitSummary[0][devnum] = keithley.emSingle(devnum, outputs, 0, 0); // writes IV data to output file. keithley will set his output to 0V after finishing EM run
+			switchbox.exitSummary[0][devnum] = keithley.emSingle(devnum, outputs, 0, 0, switchbox); // writes IV data to output file. keithley will set his output to 0V after finishing EM run
 			t1 = Clock::now();
 			Elapsed = std::chrono::duration_cast<minutes>(t1 - t0);
 			std::cout << "Device ID# " << switchbox.portSpecs[3][devnum].c_str() << " has completed active EM! \n";
@@ -479,7 +630,7 @@ void menu::executeStabilizeEM(K2400 keithley, SPA4156B SPA, Switchbox switchbox,
 			switchbox.closeChan(devnum, "keithley"); // all channels except DUT remain shorted to bias port, DUT is connected to relevant inputs
 			Vstab = stabchoice*0.7*switchbox.exitSummary[0][devnum] + (1 - stabchoice)*0.005;
 			t0 = Clock::now();
-			keithley.emSingle(devnum, outputs, 1, Vstab); // writes IV data to output file. keithley will set his output to 0V after finishing EM run
+			keithley.emSingle(devnum, outputs, 1, Vstab, switchbox); // writes IV data to output file. keithley will set his output to 0V after finishing EM run
 			t1 = Clock::now();
 			Elapsed_Stab = std::chrono::duration_cast<minutes>(t1 - t0);
 			switchbox.openChan(devnum, "keithley", 1); // get back to the state of all output ports shorted to keithley ground
@@ -490,9 +641,9 @@ void menu::executeStabilizeEM(K2400 keithley, SPA4156B SPA, Switchbox switchbox,
 	char buffer[1024];
 	for (int devnum = 0; devnum < switchbox.ndev; devnum++){
 		if (switchbox.portSpecs[4][devnum] == "y"){
-			sprintf(buffer, "%s, %s, EM, %.3f, %.3f, %.3f, %.1f\n", chip_ID.c_str(), switchbox.portSpecs[3][devnum].c_str(), temperature, switchbox.exitSummary[0][devnum], 0.0, switchbox.exitSummary[2][devnum]);
+			sprintf(buffer, "%s, %s_%s, EM, %.3f, %.3f, %.3f, %.1f\n", chip_ID.c_str(), ft_ID.c_str(), switchbox.portSpecs[3][devnum].c_str(), temperature, switchbox.exitSummary[0][devnum], 0.0, switchbox.exitSummary[2][devnum]);
 			fprintf(summary, buffer);
-			sprintf(buffer, "%s, %s, ST, %.3f, %.3f, %.3f, %.1f\n", chip_ID.c_str(), switchbox.portSpecs[3][devnum].c_str(), temperature, Vstab, 0.0, Elapsed_Stab.count());
+			sprintf(buffer, "%s, %s_%s, ST, %.3f, %.3f, %.3f, %.1f\n", chip_ID.c_str(), ft_ID.c_str(), switchbox.portSpecs[3][devnum].c_str(), temperature, Vstab, 0.0, Elapsed_Stab.count());
 			fprintf(summary, buffer);
 		}
 	}
@@ -556,7 +707,7 @@ void menu::executeHEAL(K2400 keithley, SPA4156B SPA, Switchbox switchbox, FILE* 
 	char buffer[1024];
 	for (int devnum = 0; devnum < switchbox.ndev; devnum++){
 		if (switchbox.portSpecs[4][devnum] == "y"){
-			sprintf(buffer, "%s, %s, EM, %.3f, %.3f, %.3f, %.1f\n", chip_ID.c_str(), switchbox.portSpecs[3][devnum].c_str(), temperature, switchbox.exitSummary[0][devnum], switchbox.exitSummary[1][devnum], switchbox.exitSummary[2][devnum]);
+			sprintf(buffer, "%s, %s_%s, EM, %.3f, %.3f, %.3f, %.1f\n", chip_ID.c_str(), ft_ID.c_str(), switchbox.portSpecs[3][devnum].c_str(), temperature, switchbox.exitSummary[0][devnum], switchbox.exitSummary[1][devnum], switchbox.exitSummary[2][devnum]);
 			fprintf(summary, buffer);
 		}
 	}
@@ -628,7 +779,8 @@ void menu::executeEM_ProbeStation(K2400 keithley, FILE* outputs[36]){
 
 	int devnum = 0;
 	t0 = Clock::now();
-	exitV = keithley.emSingle(devnum, outputs, 0, 0); // writes IV data to output file. keithley will set his output to 0V after finishing EM run
+	exitV = 0;
+	//exitV = keithley.emSingle(devnum, outputs, 0, 0, switchbox); // writes IV data to output file. keithley will set his output to 0V after finishing EM run
 	t1 = Clock::now();
 	Elapsed = std::chrono::duration_cast<minutes>(t1 - t0);
 	std::cout << "Device has completed active EM! \n";
@@ -703,7 +855,7 @@ void menu::executeKeithleySweep(K2400 keithley, SPA4156B SPA, Switchbox switchbo
 	char buffer[1024];
 	for (int devnum = 0; devnum < switchbox.ndev; devnum++){
 		if (switchbox.portSpecs[4][devnum] == "y"){
-			sprintf(buffer, "%s, %s, EM, %.3f, %.3f, %.3f, %.1f\n", chip_ID.c_str(), switchbox.portSpecs[3][devnum].c_str(), temperature, switchbox.exitSummary[0][devnum], switchbox.exitSummary[1][devnum], switchbox.exitSummary[2][devnum]);
+			sprintf(buffer, "%s, %s_%s, EM, %.3f, %.3f, %.3f, %.1f\n", chip_ID.c_str(), ft_ID.c_str(), switchbox.portSpecs[3][devnum].c_str(), temperature, switchbox.exitSummary[0][devnum], switchbox.exitSummary[1][devnum], switchbox.exitSummary[2][devnum]);
 			fprintf(summary, buffer);
 		}
 	}
@@ -863,7 +1015,7 @@ void menu::executeKeithleyDwell(K2400 keithley, SPA4156B SPA, Switchbox switchbo
 	char buffer[1024];
 	for (int devnum = 0; devnum < switchbox.ndev; devnum++){
 		if (switchbox.portSpecs[4][devnum] == "y"){
-			sprintf(buffer, "%s, %s, EM, %.3f, %.3f, %.3f, %.1f\n", chip_ID.c_str(), switchbox.portSpecs[3][devnum].c_str(), temperature, switchbox.exitSummary[0][devnum], switchbox.exitSummary[1][devnum], switchbox.exitSummary[2][devnum]);
+			sprintf(buffer, "%s, %s_%s, EM, %.3f, %.3f, %.3f, %.1f\n", chip_ID.c_str(), ft_ID.c_str(), switchbox.portSpecs[3][devnum].c_str(), temperature, switchbox.exitSummary[0][devnum], switchbox.exitSummary[1][devnum], switchbox.exitSummary[2][devnum]);
 			fprintf(summary, buffer);
 		}
 	}
@@ -942,7 +1094,7 @@ void menu::executeEMandMonitor(K2400 keithley, SPA4156B SPA, Switchbox switchbox
 			keithley.initializeEM(0);
 			switchbox.closeChan(devnum, "keithley"); // all channels except DUT remain shorted to bias port, DUT is connected to relevant inputs
 			t0 = Clock::now();
-			switchbox.exitSummary[0][devnum] = keithley.emSingle(devnum, outputsEM, 0, 0); // keithley.emSingle IV data to output file. keithley will set his output to 0V after finishing EM run and return the exit voltage
+			switchbox.exitSummary[0][devnum] = keithley.emSingle(devnum, outputsEM, 0, 0, switchbox); // keithley.emSingle IV data to output file. keithley will set his output to 0V after finishing EM run and return the exit voltage
 			t1 = Clock::now();
 			switchbox.openChan(devnum, "keithley", 1); // get back to the state of all output ports shorted to keithley ground
 			Elapsed = std::chrono::duration_cast<minutes>(t1 - t0);
@@ -996,7 +1148,7 @@ void menu::executeEMandMonitor(K2400 keithley, SPA4156B SPA, Switchbox switchbox
 	for (int devnum = 0; devnum < switchbox.ndev; devnum++){
 		if (switchbox.portSpecs[4][devnum] == "y"){
 			// print out the EM summary
-			sprintf(buffer, "%s, %s, EM, %.3f, %.3f, %.3f, %.1f\n", chip_ID.c_str(), switchbox.portSpecs[3][devnum].c_str(), temperature, switchbox.exitSummary[0][devnum], switchbox.exitSummary[1][devnum], switchbox.exitSummary[2][devnum]);
+			sprintf(buffer, "%s, %s_%s, EM, %.3f, %.3f, %.3f, %.1f\n", chip_ID.c_str(), ft_ID.c_str(), switchbox.portSpecs[3][devnum].c_str(), temperature, switchbox.exitSummary[0][devnum], switchbox.exitSummary[1][devnum], switchbox.exitSummary[2][devnum]);
 			fprintf(summary, buffer);
 		}
 	}
@@ -1168,6 +1320,15 @@ void menu::executeProteinCaptureMonitor(SPA4156B SPA, Switchbox switchbox, K2400
 }
 
 void menu::executeYield(SPA4156B SPA, Switchbox switchbox, FILE* outputs[36]){
+	
+	// Get the time and prep for printing it
+	std::chrono::time_point<std::chrono::system_clock> time_now = std::chrono::system_clock::now();
+	std::time_t time_now_t = std::chrono::system_clock::to_time_t(time_now);
+	std::tm now_tm = *std::localtime(&time_now_t);
+	char buf[512];
+	std::strftime(buf, 512, "%Y%m%d_%H_%M_%S, ", &now_tm);
+	std::cout << buf << std::endl;
+	
 	// get some comments demarcating this particular round of sampling and write it to the YM output file
 	std::string comments;
 	std::cout << "What are user comments for this yield check?\n";
@@ -1178,7 +1339,8 @@ void menu::executeYield(SPA4156B SPA, Switchbox switchbox, FILE* outputs[36]){
 		if (switchbox.portSpecs[4][devnum] == "y"){
 			// write device identifier to the output text file, to be followed by the measurement recording
 			FILE* sb_output = outputs[0]; // set the output file stream to yield monitor file
-			fprintf(sb_output, "%s,", switchbox.portSpecs[3][devnum].c_str());
+			fprintf(sb_output, buf);
+			fprintf(sb_output, "%s_%s,", ft_ID.c_str(), switchbox.portSpecs[3][devnum].c_str());
 			fflush(sb_output);
 			std::cout << "Device ID# " << switchbox.portSpecs[3][devnum].c_str() << " R @ 1mV = ";
 			switchbox.closeChan(devnum, "SPA"); // all channels except DUT remain shorted to bias port, DUT is connected to relevant inputs
@@ -1376,7 +1538,7 @@ void menu::executeSweepBreak(SPA4156B SPA, Switchbox switchbox, FILE* outputs[36
 	for (int devnum = 0; devnum < switchbox.ndev; devnum++){
 
 		if (switchbox.portSpecs[4][devnum] == "y"){
-			sprintf(buffer, "%s, %s, SwBr, %.3f, %.3f, %.3f, %.1f\n", chip_ID.c_str(), switchbox.portSpecs[3][devnum].c_str(), temperature, switchbox.exitSummary[3][devnum], switchbox.exitSummary[5][devnum], switchbox.exitSummary[4][devnum]);
+			sprintf(buffer, "%s, %s_%s, SwBr, %.3f, %.3f, %.3f, %.1f\n", chip_ID.c_str(), ft_ID.c_str(), switchbox.portSpecs[3][devnum].c_str(), temperature, switchbox.exitSummary[3][devnum], switchbox.exitSummary[5][devnum], switchbox.exitSummary[4][devnum]);
 			fprintf(summary, buffer);
 		}
 	}
@@ -1442,7 +1604,7 @@ void menu::executeEMandSweepBreakandGatedIV(SPA4156B SPA, Switchbox switchbox, K
 			//
 			switchbox.closeChan(devnum, "keithley"); // all channels except DUT remain shorted to bias port, DUT is connected to relevant inputs
 			t0 = Clock::now();
-			switchbox.exitSummary[0][devnum] = keithley.emSingle(devnum, outputsEM, 0, 0); // keithley.emSingle IV data to output file. keithley will set his output to 0V after finishing EM run and return the exit voltage
+			switchbox.exitSummary[0][devnum] = keithley.emSingle(devnum, outputsEM, 0, 0, switchbox); // keithley.emSingle IV data to output file. keithley will set his output to 0V after finishing EM run and return the exit voltage
 			t1 = Clock::now();
 			switchbox.openChan(devnum, "keithley",1); // get back to the state of all output ports shorted to keithley ground
 			Elapsed = std::chrono::duration_cast<minutes>(t1 - t0);
@@ -1485,10 +1647,10 @@ void menu::executeEMandSweepBreakandGatedIV(SPA4156B SPA, Switchbox switchbox, K
 	for (int devnum = 0; devnum < switchbox.ndev; devnum++){
 		if (switchbox.portSpecs[4][devnum] == "y"){
 			// print out the EM summary
-			sprintf(buffer, "%s, %s, EM, %.3f, %.3f, %.3f, %.1f\n", chip_ID.c_str(), switchbox.portSpecs[3][devnum].c_str(), temperature, switchbox.exitSummary[0][devnum], switchbox.exitSummary[1][devnum], switchbox.exitSummary[2][devnum]);
+			sprintf(buffer, "%s, %s_%s, EM, %.3f, %.3f, %.3f, %.1f\n", chip_ID.c_str(), ft_ID.c_str(), switchbox.portSpecs[3][devnum].c_str(), temperature, switchbox.exitSummary[0][devnum], switchbox.exitSummary[1][devnum], switchbox.exitSummary[2][devnum]);
 			fprintf(summary, buffer);
 			// print out the SwBr summary
-			sprintf(buffer, "%s, %s, SwBr, %.3f, %.3f, %.3f, %.1f\n", chip_ID.c_str(), switchbox.portSpecs[3][devnum].c_str(), temperature, switchbox.exitSummary[3][devnum], switchbox.exitSummary[4][devnum], switchbox.exitSummary[5][devnum]);
+			sprintf(buffer, "%s, %s_%s, SwBr, %.3f, %.3f, %.3f, %.1f\n", chip_ID.c_str(), ft_ID.c_str(), switchbox.portSpecs[3][devnum].c_str(), temperature, switchbox.exitSummary[3][devnum], switchbox.exitSummary[4][devnum], switchbox.exitSummary[5][devnum]);
 			fprintf(summary, buffer);
 		}
 	}
@@ -1572,7 +1734,7 @@ void menu::executeEMandKeithleySweepandIV(SPA4156B SPA, Switchbox switchbox, K24
 			keithley.initializeEM(0);
 			switchbox.closeChan(devnum, "keithley"); // all channels except DUT remain shorted to bias port, DUT is connected to relevant inputs
 			t0 = Clock::now();
-			switchbox.exitSummary[0][devnum] = keithley.emSingle(devnum, outputsEM, 0, 0); // keithley.emSingle IV data to output file. keithley will set his output to 0V after finishing EM run and return the exit voltage
+			switchbox.exitSummary[0][devnum] = keithley.emSingle(devnum, outputsEM, 0, 0, switchbox); // keithley.emSingle IV data to output file. keithley will set his output to 0V after finishing EM run and return the exit voltage
 			t1 = Clock::now();
 			switchbox.openChan(devnum, "keithley", 1); // get back to the state of all output ports shorted to keithley ground
 			Elapsed = std::chrono::duration_cast<minutes>(t1 - t0);
@@ -1615,10 +1777,10 @@ void menu::executeEMandKeithleySweepandIV(SPA4156B SPA, Switchbox switchbox, K24
 	for (int devnum = 0; devnum < switchbox.ndev; devnum++){
 		if (switchbox.portSpecs[4][devnum] == "y"){
 			// print out the EM summary
-			sprintf(buffer, "%s, %s, EM, %.3f, %.3f, %.3f, %.1f\n", chip_ID.c_str(), switchbox.portSpecs[3][devnum].c_str(), temperature, switchbox.exitSummary[0][devnum], switchbox.exitSummary[1][devnum], switchbox.exitSummary[2][devnum]);
+			sprintf(buffer, "%s, %s_%s, EM, %.3f, %.3f, %.3f, %.1f\n", chip_ID.c_str(), ft_ID.c_str(), switchbox.portSpecs[3][devnum].c_str(), temperature, switchbox.exitSummary[0][devnum], switchbox.exitSummary[1][devnum], switchbox.exitSummary[2][devnum]);
 			fprintf(summary, buffer);
 			// print out the SwBr summary
-			sprintf(buffer, "%s, %s, KS, %.3f, %.3f, %.3f, %.1f\n", chip_ID.c_str(), switchbox.portSpecs[3][devnum].c_str(), temperature, switchbox.exitSummary[3][devnum], switchbox.exitSummary[4][devnum], switchbox.exitSummary[5][devnum]);
+			sprintf(buffer, "%s, %s_%s, KS, %.3f, %.3f, %.3f, %.1f\n", chip_ID.c_str(), ft_ID.c_str(), switchbox.portSpecs[3][devnum].c_str(), temperature, switchbox.exitSummary[3][devnum], switchbox.exitSummary[4][devnum], switchbox.exitSummary[5][devnum]);
 			fprintf(summary, buffer);
 		}
 	}
@@ -1702,7 +1864,7 @@ void menu::executeEMandIV(SPA4156B SPA, Switchbox switchbox, K2400 keithley){
 			keithley.initializeEM(0);
 			switchbox.closeChan(devnum, "keithley"); // all channels except DUT remain shorted to bias port, DUT is connected to relevant inputs
 			t0 = Clock::now();
-			switchbox.exitSummary[0][devnum] = keithley.emSingle(devnum, outputsEM, 0, 0); // keithley.emSingle IV data to output file. keithley will set his output to 0V after finishing EM run and return the exit voltage
+			switchbox.exitSummary[0][devnum] = keithley.emSingle(devnum, outputsEM, 0, 0, switchbox); // keithley.emSingle IV data to output file. keithley will set his output to 0V after finishing EM run and return the exit voltage
 			t1 = Clock::now();
 			switchbox.openChan(devnum, "keithley", 1); // get back to the state of all output ports shorted to keithley ground
 			Elapsed = std::chrono::duration_cast<minutes>(t1 - t0);
@@ -1724,7 +1886,7 @@ void menu::executeEMandIV(SPA4156B SPA, Switchbox switchbox, K2400 keithley){
 	for (int devnum = 0; devnum < switchbox.ndev; devnum++){
 		if (switchbox.portSpecs[4][devnum] == "y"){
 			// print out the EM summary
-			sprintf(buffer, "%s, %s, EM, %.3f, %.3f, %.3f, %.1f\n", chip_ID.c_str(), switchbox.portSpecs[3][devnum].c_str(), temperature, switchbox.exitSummary[0][devnum], switchbox.exitSummary[1][devnum], switchbox.exitSummary[2][devnum]);
+			sprintf(buffer, "%s, %s_%s, EM, %.3f, %.3f, %.3f, %.1f\n", chip_ID.c_str(), ft_ID.c_str(), switchbox.portSpecs[3][devnum].c_str(), temperature, switchbox.exitSummary[0][devnum], switchbox.exitSummary[1][devnum], switchbox.exitSummary[2][devnum]);
 			fprintf(summary, buffer);
 		}
 	}
@@ -1804,7 +1966,7 @@ void menu::executeEMandHeal(SPA4156B SPA, Switchbox switchbox, K2400 keithley){
 			keithley.initializeEM(0);
 			switchbox.closeChan(devnum, "keithley"); // all channels except DUT remain shorted to bias port, DUT is connected to relevant inputs
 			t0 = Clock::now();
-			switchbox.exitSummary[0][devnum] = keithley.emSingle(devnum, outputsEM, 0, 0); // keithley.emSingle IV data to output file. keithley will set his output to 0V after finishing EM run and return the exit voltage
+			switchbox.exitSummary[0][devnum] = keithley.emSingle(devnum, outputsEM, 0, 0, switchbox); // keithley.emSingle IV data to output file. keithley will set his output to 0V after finishing EM run and return the exit voltage
 			t1 = Clock::now();
 			switchbox.openChan(devnum, "keithley", 1); // get back to the state of all output ports shorted to keithley ground
 			Elapsed = std::chrono::duration_cast<minutes>(t1 - t0);
@@ -1847,10 +2009,10 @@ void menu::executeEMandHeal(SPA4156B SPA, Switchbox switchbox, K2400 keithley){
 	for (int devnum = 0; devnum < switchbox.ndev; devnum++){
 		if (switchbox.portSpecs[4][devnum] == "y"){
 			// print out the EM summary
-			sprintf(buffer, "%s, %s, EM, %.3f, %.3f, %.3f, %.1f\n", chip_ID.c_str(), switchbox.portSpecs[3][devnum].c_str(), temperature, switchbox.exitSummary[0][devnum], switchbox.exitSummary[1][devnum], switchbox.exitSummary[2][devnum]);
+			sprintf(buffer, "%s, %s_%s, EM, %.3f, %.3f, %.3f, %.1f\n", chip_ID.c_str(), ft_ID.c_str(), switchbox.portSpecs[3][devnum].c_str(), temperature, switchbox.exitSummary[0][devnum], switchbox.exitSummary[1][devnum], switchbox.exitSummary[2][devnum]);
 			fprintf(summary, buffer);
 			// print out the Heal summary
-			sprintf(buffer, "%s, %s, HL, %.3f, %.3f, %.3f, %.1f\n", chip_ID.c_str(), switchbox.portSpecs[3][devnum].c_str(), temperature, Vsample, switchbox.exitSummary[4][devnum], holdTime);
+			sprintf(buffer, "%s, %s_%s, HL, %.3f, %.3f, %.3f, %.1f\n", chip_ID.c_str(), ft_ID.c_str(), switchbox.portSpecs[3][devnum].c_str(), temperature, Vsample, switchbox.exitSummary[4][devnum], holdTime);
 			fprintf(summary, buffer);
 		}
 	}

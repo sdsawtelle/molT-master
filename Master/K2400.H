@@ -11,6 +11,7 @@
 #include <sstream>
 #include <math.h> //for floor
 #include <chrono>
+#include "Switchbox.h"
 
 #define TIMEOUT T10s   // Timeout value = 10 seconds
 #define NO_SECONDARY_ADDR 0 // PNA has no Secondary address
@@ -37,7 +38,8 @@ public:
 	float setParamsPulse();
 	void display_parameters();
 	void measurement(int ifVoltage);
-	float emSingle(int devnum, FILE* outputs[36], int emType, float Vstab);
+	float emSingle(int devnum, FILE* outputs[36], int emType, float Vstab, Switchbox switchbox);
+	float RjemSingle(int devnum, FILE* outputs[36], Switchbox switchbox);
 	float healSingle(int devnum, FILE* outputs[36]);
 	float sweepSingle(int devnum, FILE* outputs[36], float Vstart = -1.0);
 	float dwellSingle(int devnum, FILE* outputs[36], float dwellV);
@@ -66,6 +68,11 @@ private:
 	float rampup_thresh;
 	float rampback_thresh;
 
+	float delta;  // delta_resistance that will trigger a ramp back.
+	int delta_counts;
+	int ndr_counts;
+	float avg_rs;
+
 	float delay;   // delay between ramping the voltage every voltage (See the variable down here)
 	float volt_ramp; //voltage ramp
 	float volt_start;
@@ -85,23 +92,37 @@ private:
 	float volt_stop_KS;  // voltage stop
 	float target_resistance_KS; 
 
+	float determine_voltage_range(float src_volt);
+	int set_voltage_range(float range_volt);
+	float present_volt_range;
+
+	float determine_current_range(float meas_curr);
+	int set_current_range(float range_curr);
+	float present_curr_range;
+
+	int switch_voltage_range(Switchbox switchbox, int devnum, float range_volt);
+	int switch_current_range(Switchbox switchbox, int devnum, float range_curr);
 
 
 	int pna;     // this is gonna be our holder of Unique iDentifier
 
-	float DoMeasurement(FILE* data, FILE* reading, FILE* output, float delay);
+	float DoMeasurement(FILE* data, FILE* reading, FILE* output, float delay, Switchbox switchbox, int devnum);
+	float DoRjMeasurement(FILE* data, FILE* reading, FILE* output, float delay, int devnum, Switchbox switchbox);
+	float DoAlternateMeasurement(FILE* data, FILE* reading, FILE* output, float delay);
 	float DoCurvatureMeasurement(FILE* data, FILE* reading, FILE* output, float delay);
 	float DoStabilizeMeasurement(FILE* data, FILE* reading, FILE* output, float delay, float Vstab, float stabstep);
 	float DoHeal(FILE* data, FILE* reading, FILE* output, float delay);
 	float DoSweep(FILE* data, FILE* reading, FILE* output, float delay);
 	float DoDwell(FILE* data, FILE* reading, FILE* output, float delay, float dwellV);
 	void GetReading(char* buffer, std::string &temporary, FILE* output, FILE* log_keithley);
+	void TrackIndicators(int &counter_consec, int &counter_ndr, int &counter, float &diffres, float &delta_res, float &resistance_benchmark);
 	void KeepTrackIndicators(int &res_consecutive, int &targ_res_consecutive, int &neg_res_consecutive, int &bench_res_consecutive, float &resistance_benchmark, float &resistance_timely, float resistance_initial, float &diffres, float target_resistance, float target_resistance_tolerance, int &counter);
 	void KeepTrackCurvatureIndicators(int &counter_0, int &counter_1, int &counter_2, int &counter_3, int &bestString, float rampup_thresh, float rampback_thresh, int &targ_res_consecutive, float &resistance_benchmark, float &resistance_timely, float old_resistance, float resistance_initial, float &diffres, float target_resistance, float target_resistance_tolerance);
 	void KeepTrackHealIndicators(int &res_consecutive, int &targ_res_consecutive, int &neg_res_consecutive, int &bench_res_consecutive, float &resistance_benchmark, float &resistance_timely, float &diffres, float target_resistance, float target_resistance_tolerance, int &counter);
 
 	// void ShowGraph();
 	float GetResistance(float *diffres, float *old_resistance, float &voltage, float &resistance, FILE* stream, FILE* output, int counter);
+	float CalcRes(float *diffres, float *delta_res, float *old_resistance, float &voltage_read, float &current_read, FILE* reading_log_keithley, FILE* output);
 	int GPIBWrite(int ud, char* cmd);
 	int GPIBRead(int ud, char* message);
 	bool CheckRampDown(float resistance_timely, float resistance_initial, int &res_consecutive, int &bench_res_consecutive, int &neg_res_consecutive);

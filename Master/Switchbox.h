@@ -43,6 +43,7 @@ public:
 	void getAllPorts();
 	int checkFileExists(std::string fileName);
 	std::string portSpecs[10][36]; //can read in port specifications for up to 36 devices. the first row are channels to keithley, the second row are channels to SPA.
+	std::string ft_ID;
 	float exitSummary[6][36]; //holds various summary values from the most recent EM and SWBR attempts on each device
 protected:
 private:

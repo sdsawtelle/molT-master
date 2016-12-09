@@ -97,6 +97,7 @@ int Switchbox::GPIBRead(int ud, char *message){
 	return 0;
 }
 
+
 void Switchbox::getAllPorts(){
 	// get input file containg pad numbers for devices. 
 	// each device should be its own row in the text file, each pad should be a two digit number
@@ -252,7 +253,7 @@ void Switchbox::getPorts(int outputfileFlag, FILE* outputs[36], std::string file
 				// create the output file if the measurement is not a yield monitoring measurement
 				if (outputfileFlag == 0){
 					char filebuffer[1024] = "";
-					sprintf(filebuffer, "%s_%s.txt", file_out.c_str(), buffer2);
+					sprintf(filebuffer, "%s_%s_%s.txt", file_out.c_str(), ft_ID.c_str(), buffer2);
 					outputs[i] = fopen(filebuffer, "w+");
 					if (outputs[i] == NULL) { // check that fopen worked correctly
 						std::cout << "fopen has failed for the output file " << filebuffer << "\n";

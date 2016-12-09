@@ -912,7 +912,7 @@ float SPA4156B::yieldGapSingle(){
 	char buffer[ARRAYSZ] = ""; // size of buffer is given at the beginning
 
 	configSample(0.001); // reset to sampling mode 
-	GPIBWrite(pna, ":PAGE:MEAS:SAMP:CONS:SMU1 0.1"); 	// change to using a sampling bias of 100mV
+	GPIBWrite(pna, ":PAGE:MEAS:SAMP:CONS:SMU1 0.05"); 	// change to using a sampling bias of 100mV
 	GPIBWrite(pna, ":PAGE:SCON:MEAS:SING;"); // the first measurements are always weird, throw it out
 	Sleep(2000); // wait a while (> 100 PLC) in case it is high R and integrates for a long time
 	GPIBWrite(pna, ":PAGE:SCON:MEAS:SING;"); //execute a single measurement

@@ -1,4 +1,4 @@
-﻿Build started 7/12/2016 1:23:54 PM.
+﻿Build started 10/25/2016 2:19:07 PM.
      1>Project "C:\Users\Sonya\Documents\Code_GitVC\Cpp\molT-master\Master\Master.vcxproj" on node 2 (Build target(s)).
      1>ClCompile:
          C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /I"C:\Users\Sonya\Documents\Code\Cpp\molT-master\Master" /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D WIN32 /D _CRT_SECURE_NO_WARNINGS /D _DEBUG /D _CONSOLE /D _LIB /D _MBCS /Gm /EHsc /RTC1 /MTd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt K2400.cpp
@@ -8,27 +8,48 @@
      1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(115): warning C4305: '=' : truncation from 'double' to 'float'
      1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(119): warning C4305: '=' : truncation from 'double' to 'float'
      1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(127): warning C4305: 'initializing' : truncation from 'double' to 'float'
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(136): warning C4244: '=' : conversion from 'float' to 'int', possible loss of data
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(137): warning C4244: '=' : conversion from 'float' to 'int', possible loss of data
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(141): warning C4244: '=' : conversion from 'float' to 'int', possible loss of data
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(142): warning C4244: '=' : conversion from 'float' to 'int', possible loss of data
      1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(190): warning C4305: '=' : truncation from 'double' to 'float'
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(289): warning C4305: '=' : truncation from 'double' to 'float'
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(291): warning C4305: '=' : truncation from 'double' to 'float'
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(331): warning C4305: '=' : truncation from 'double' to 'float'
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(333): warning C4305: '=' : truncation from 'double' to 'float'
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(655): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(815): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(871): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(892): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(913): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(1232): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(1235): warning C4244: 'initializing' : conversion from 'double' to 'float', possible loss of data
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(1237): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(1269): warning C4305: '-=' : truncation from 'double' to 'float'
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(1611): warning C4244: 'initializing' : conversion from 'int' to 'float', possible loss of data
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(1612): warning C4244: 'initializing' : conversion from 'int' to 'float', possible loss of data
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(1618): warning C4244: '=' : conversion from 'int' to 'float', possible loss of data
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(1619): warning C4244: '=' : conversion from 'int' to 'float', possible loss of data
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(1879): warning C4018: '<' : signed/unsigned mismatch
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(205): warning C4305: '=' : truncation from 'double' to 'float'
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(247): warning C4305: '=' : truncation from 'double' to 'float'
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(300): warning C4305: '=' : truncation from 'double' to 'float'
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(302): warning C4305: '=' : truncation from 'double' to 'float'
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(304): warning C4305: '=' : truncation from 'double' to 'float'
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(308): warning C4305: 'initializing' : truncation from 'double' to 'float'
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(315): warning C4244: '=' : conversion from 'float' to 'int', possible loss of data
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(316): warning C4244: '=' : conversion from 'float' to 'int', possible loss of data
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(346): warning C4305: '=' : truncation from 'double' to 'float'
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(347): warning C4305: '=' : truncation from 'double' to 'float'
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(353): warning C4305: '=' : truncation from 'double' to 'float'
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(414): warning C4305: '=' : truncation from 'double' to 'float'
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(431): warning C4305: '=' : truncation from 'double' to 'float'
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(500): warning C4305: '=' : truncation from 'double' to 'float'
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(502): warning C4305: '=' : truncation from 'double' to 'float'
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(542): warning C4305: '=' : truncation from 'double' to 'float'
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(544): warning C4305: '=' : truncation from 'double' to 'float'
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(630): warning C4305: '=' : truncation from 'double' to 'float'
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(653): warning C4305: '=' : truncation from 'double' to 'float'
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(656): warning C4305: '=' : truncation from 'double' to 'float'
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(659): warning C4305: '=' : truncation from 'double' to 'float'
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(662): warning C4305: '=' : truncation from 'double' to 'float'
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(998): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(1137): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(1151): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(1342): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(1501): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(1557): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(1578): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(1599): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(1918): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(1921): warning C4244: 'initializing' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(1923): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(1955): warning C4305: '-=' : truncation from 'double' to 'float'
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(2352): warning C4244: 'initializing' : conversion from 'int' to 'float', possible loss of data
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(2353): warning C4244: 'initializing' : conversion from 'int' to 'float', possible loss of data
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(2359): warning C4244: '=' : conversion from 'int' to 'float', possible loss of data
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(2360): warning C4244: '=' : conversion from 'int' to 'float', possible loss of data
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(2620): warning C4018: '<' : signed/unsigned mismatch
        Link:
          C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Users\Sonya\Documents\Code_GitVC\Cpp\molT-master\Debug\Master.exe" /INCREMENTAL /NOLOGO "C:\Users\Sonya\Documents\Code_GitVC\Cpp\molT-master\Master\gpib-32.obj" libmat.lib libmex.lib libeng.lib libmx.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:\Users\Sonya\Documents\Code_GitVC\Cpp\molT-master\Debug\Master.pdb" /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\Users\Sonya\Documents\Code_GitVC\Cpp\molT-master\Debug\Master.lib" /MACHINE:X86 Debug\DMM.obj
          Debug\graph.obj
@@ -38,9 +59,14 @@
          Debug\SPA4145B.obj
          Debug\SPA4156B.obj
          Debug\Switchbox.obj
+     1>Switchbox.obj : warning LNK4099: PDB 'vc120.pdb' was not found with 'Switchbox.obj' or at 'C:\Users\Sonya\Documents\Code_GitVC\Cpp\molT-master\Debug\vc120.pdb'; linking object as if no debug info
+     1>SPA4156B.obj : warning LNK4099: PDB 'vc120.pdb' was not found with 'SPA4156B.obj' or at 'C:\Users\Sonya\Documents\Code_GitVC\Cpp\molT-master\Debug\vc120.pdb'; linking object as if no debug info
+     1>SPA4145B.obj : warning LNK4099: PDB 'vc120.pdb' was not found with 'SPA4145B.obj' or at 'C:\Users\Sonya\Documents\Code_GitVC\Cpp\molT-master\Debug\vc120.pdb'; linking object as if no debug info
+     1>graph.obj : warning LNK4099: PDB 'vc120.pdb' was not found with 'graph.obj' or at 'C:\Users\Sonya\Documents\Code_GitVC\Cpp\molT-master\Debug\vc120.pdb'; linking object as if no debug info
+     1>DMM.obj : warning LNK4099: PDB 'vc120.pdb' was not found with 'DMM.obj' or at 'C:\Users\Sonya\Documents\Code_GitVC\Cpp\molT-master\Debug\vc120.pdb'; linking object as if no debug info
          Master.vcxproj -> C:\Users\Sonya\Documents\Code_GitVC\Cpp\molT-master\Debug\Master.exe
      1>Done Building Project "C:\Users\Sonya\Documents\Code_GitVC\Cpp\molT-master\Master\Master.vcxproj" (Build target(s)).
 
 Build succeeded.
 
-Time Elapsed 00:00:12.95
+Time Elapsed 00:00:22.33
