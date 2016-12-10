@@ -32,6 +32,10 @@ public:
 	int configure();
 	float setParamsEM(int emType);
 	void initializeEM(int emType);
+
+	float WrapEM(int devnum, FILE* outputs[36], Switchbox switchbox);
+
+
 	void setParamsSweep(int* useEMV);
 	void initializeSweep();
 	void setParamsDwell();
@@ -39,7 +43,6 @@ public:
 	void display_parameters();
 	void measurement(int ifVoltage);
 	float emSingle(int devnum, FILE* outputs[36], int emType, float Vstab, Switchbox switchbox);
-	float RjemSingle(int devnum, FILE* outputs[36], Switchbox switchbox);
 	float healSingle(int devnum, FILE* outputs[36]);
 	float sweepSingle(int devnum, FILE* outputs[36], float Vstart = -1.0);
 	float dwellSingle(int devnum, FILE* outputs[36], float dwellV);
@@ -53,61 +56,103 @@ public:
 
 protected:
 private:
-	std::string file_name;
-	std::string timelog_name;
+	// ---------------------------------------------------------------------------------------------------------
+	// ---------------------------------------  GPIB -----------------------------------
+	// ---------------------------------------------------------------------------------------------------------
+	int pna;     // Unique iDentifier for GPIB communication
+	int GPIBWrite(int ud, char* cmd);
+	int GPIBRead(int ud, char* message);
 
-	float resistance_timely; //resistance of the last measurement
-	float resistance_benchmark;        //resistance at the bottom of current "hill"
-	float resistance_tolerance[4];
-	float resistance_tolerance_defaults[4];
-	float resistance_tolerance_high;
-	float target_resistance;
-	float target_resistance_tolerance;
 
-	// these are for the curvature EM measurements
+	// ---------------------------------------------------------------------------------------------------------
+	// --------------------------------------- STANDARD EM -----------------------------------
+	// ---------------------------------------------------------------------------------------------------------
+	float temperature; //temperature reading on lakeshore to record what temp we are breaking wire at
+	float resistance_timely; //resistance of the most recent measurement
+	float initial_res; //the first resistance measured for the device on beginning EM
+	float resistance_benchmark; //average resistance at beginning of a ramp cycle
+	float target_resistance; //the target resistance for EM to exit
+	float avg_series_res; //an average series resistance presented by devices of this type
+	int rampType; //determines what events we look at for triggering ramp back
+
+	float bench_percent_tols[4]; //possible values of "tol" for R>R_bench*(1+tol) events (present value depends on Rjct) 
+	int n_percent_trigger[4];  //possible number of consecutive R > R_bench*(1+tol) events to trigger ramp down  (present value depends on Rjct)
+	int n_ndr_trigger[4]; //possible number consecutive NDR events to trigger rampdown (present value depends on Rjct)
+	int n_delta_trigger[4]; //possible number consecutive delta(R) > delta events to trigger ramp down (present value depends on Rjct)
+	float res_jct_switch[4]; // Rjct at which to switch from between the possible values in the above arrays (e.g. Rjct < res_switch[0] means use n_ndr_trigger[0])
+
+	int bench_tol; //present value of "tol" for R>R_bench*(1+tol) and R > (Rjct + R_avg_series)*(1+tol) events
+	int n_percent; //present number of consecutive R > R_bench*(1+tol) events to trigger ramp down
+	int n_ndr; //present number consecutive NDR events to trigger rampdown
+	int n_delta; //present number consecutive delta(R) > delta events to trigger ramp down
+
+	float delay;   // delay between ramping the voltage every voltage (See the variable down here)
+	float volt_ramp; //voltage step for ramping up
+	float volt_start; // voltage at which to start ramp
+	float volt_stop;  // max voltage allowed
+	float volt_down;  //voltage by which we ramp down
+	int nplc; //number of power line cycles to integrate over
+	int rampdown_dwell; //dwell time (in msec) for each voltage point in the rampdown - N.B. rampdown occurs in 1mV step so rate is 1mV per rampdown_dwell msec.
+
+
+	float DoEM(FILE* data, FILE* reading, FILE* output, float delay, int devnum, Switchbox switchbox);
+	float CalcMetrics(float *diffres, float *delta_res, float *old_resistance, float &voltage_read, float &current_read, FILE* reading_log_keithley, FILE* output);
+	void CalcBenchmark(int &counter, float &resistance_benchmark);
+	void UpdateCounters(int &counter_delta, int &counter_percent, int &counter_ndr, int &counter_normed_percent, int &counter, float &diffres, float &delta_res, float &resistance_benchmark);
+	void UpdateTolerances(float initial_res);
+	bool CheckRampBack(int &counter_delta, int &counter_percent, int &counter_ndr, int &counter_normed_percent);
+
+	// ---------------------------------------------------------------------------------------------------------
+	// --------------------------------------- CONSTANT-V CURVATURE EM -----------------------------------
+	// ---------------------------------------------------------------------------------------------------------
 	float rampup_thresh;
 	float rampback_thresh;
+
+
+	// ---------------------------------------------------------------------------------------------------------
+	// --------------------------------------- RANGE HANDLING -----------------------------------
+	// ---------------------------------------------------------------------------------------------------------
+	float present_volt_range; //range it is present on
+	float determine_voltage_range(float src_volt); //optimal range for present sourced voltage
+	int set_voltage_range(float range_volt); //set the range
+	int switch_voltage_range(Switchbox switchbox, int devnum, float range_volt); //wrapper for setting the range that opens/closes switchbox connection
+
+	float present_curr_range; //range it is presently on
+	float determine_current_range(float meas_curr); //optimal range for present measure current
+	int set_current_range(float range_curr); //set the range
+	int switch_current_range(Switchbox switchbox, int devnum, float range_curr); //wrapper for setting the range that opens/closes switchbox connection
+
+
+
+
+
+
+
+
+	float resistance_tolerance_defaults[4];
+	float resistance_tolerance_high;
 
 	float delta;  // delta_resistance that will trigger a ramp back.
 	int delta_counts;
 	int ndr_counts;
 	float avg_rs;
 
-	float delay;   // delay between ramping the voltage every voltage (See the variable down here)
-	float volt_ramp; //voltage ramp
-	float volt_start;
-	float volt_stop;  // voltage stop
-	float volt_down;  //voltage by which we ramp down
-	int ntrigger[4];  //length of consecutive string to trigger ramp down
-	int nnegres[4]; //# consecutive NDR to trigger rampdown
 	int ntrigger_high;  //length of consecutive string to trigger ramp down
 	int nnegres_high;  //# consecutive NDR to trigger rampdown
-	int nplc; //number of power line cycles to integrate over
-	int rampdown_dwell; //dwell time (in msec) for each voltage point in the rampdown - N.B. rampdown occurs in 1mV step so rate is 1mV per rampdown_dwell msec.
+	
 	float res_switch[4]; // resistance at which to switch from using low-R regime parameters to high-R regime parameters
-	float temperature; //temperature reading on lakeshore to record what temp we are breaking wire at
 
 	float volt_ramp_KS; //voltage ramp
 	float volt_start_KS;
 	float volt_stop_KS;  // voltage stop
 	float target_resistance_KS; 
 
-	float determine_voltage_range(float src_volt);
-	int set_voltage_range(float range_volt);
-	float present_volt_range;
-
-	float determine_current_range(float meas_curr);
-	int set_current_range(float range_curr);
-	float present_curr_range;
-
-	int switch_voltage_range(Switchbox switchbox, int devnum, float range_volt);
-	int switch_current_range(Switchbox switchbox, int devnum, float range_curr);
 
 
-	int pna;     // this is gonna be our holder of Unique iDentifier
+
+	
 
 	float DoMeasurement(FILE* data, FILE* reading, FILE* output, float delay, Switchbox switchbox, int devnum);
-	float DoRjMeasurement(FILE* data, FILE* reading, FILE* output, float delay, int devnum, Switchbox switchbox);
 	float DoAlternateMeasurement(FILE* data, FILE* reading, FILE* output, float delay);
 	float DoCurvatureMeasurement(FILE* data, FILE* reading, FILE* output, float delay);
 	float DoStabilizeMeasurement(FILE* data, FILE* reading, FILE* output, float delay, float Vstab, float stabstep);
@@ -115,16 +160,13 @@ private:
 	float DoSweep(FILE* data, FILE* reading, FILE* output, float delay);
 	float DoDwell(FILE* data, FILE* reading, FILE* output, float delay, float dwellV);
 	void GetReading(char* buffer, std::string &temporary, FILE* output, FILE* log_keithley);
-	void TrackIndicators(int &counter_consec, int &counter_ndr, int &counter, float &diffres, float &delta_res, float &resistance_benchmark);
-	void KeepTrackIndicators(int &res_consecutive, int &targ_res_consecutive, int &neg_res_consecutive, int &bench_res_consecutive, float &resistance_benchmark, float &resistance_timely, float resistance_initial, float &diffres, float target_resistance, float target_resistance_tolerance, int &counter);
-	void KeepTrackCurvatureIndicators(int &counter_0, int &counter_1, int &counter_2, int &counter_3, int &bestString, float rampup_thresh, float rampback_thresh, int &targ_res_consecutive, float &resistance_benchmark, float &resistance_timely, float old_resistance, float resistance_initial, float &diffres, float target_resistance, float target_resistance_tolerance);
-	void KeepTrackHealIndicators(int &res_consecutive, int &targ_res_consecutive, int &neg_res_consecutive, int &bench_res_consecutive, float &resistance_benchmark, float &resistance_timely, float &diffres, float target_resistance, float target_resistance_tolerance, int &counter);
 
+	void KeepTrackIndicators(int &res_consecutive, int &targ_res_consecutive, int &neg_res_consecutive, int &bench_res_consecutive, float &resistance_benchmark, float &resistance_timely, float resistance_initial, float &diffres, float target_resistance, int &counter);
+	void KeepTrackCurvatureIndicators(int &counter_0, int &counter_1, int &counter_2, int &counter_3, int &bestString, float rampup_thresh, float rampback_thresh, int &targ_res_consecutive, float &resistance_benchmark, float &resistance_timely, float old_resistance, float resistance_initial, float &diffres, float target_resistance);
+	void KeepTrackHealIndicators(int &res_consecutive, int &targ_res_consecutive, int &neg_res_consecutive, int &bench_res_consecutive, float &resistance_benchmark, float &resistance_timely, float &diffres, float target_resistance, int &counter);
 	// void ShowGraph();
 	float GetResistance(float *diffres, float *old_resistance, float &voltage, float &resistance, FILE* stream, FILE* output, int counter);
-	float CalcRes(float *diffres, float *delta_res, float *old_resistance, float &voltage_read, float &current_read, FILE* reading_log_keithley, FILE* output);
-	int GPIBWrite(int ud, char* cmd);
-	int GPIBRead(int ud, char* message);
+
 	bool CheckRampDown(float resistance_timely, float resistance_initial, int &res_consecutive, int &bench_res_consecutive, int &neg_res_consecutive);
 	bool GotTargetResistance(float &resistance_timely, int &targ_res_consecutive, float &volt_stop, float &voltage);
 };

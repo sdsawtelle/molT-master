@@ -298,11 +298,12 @@ void menu::menu_start(K2400 keithley, SPA4156B SPA, Switchbox switchbox){
 					closeFiles(ymflag, switchbox.ndev, outputs, switchbox); // close all the output files
 					break; }
 		case 31:{
-				   // Execute RJ EM ON A GROUP of devices\n";
-				   switchbox.getPorts(ymflag, outputs); // reads in all the pad specifications and mark which devices are to be tested
-				   keithley.setParamsEM(4); // sets the EM parameters (some user-input).
-				   executeRjEM(keithley, SPA, switchbox, outputs); // performs sequential EM runs on the devices listed in the input file, writing EM IV's to appropriate outputs.
-				   closeFiles(ymflag, switchbox.ndev, outputs, switchbox); // close all the output files
+				   //// Execute RJ EM ON A GROUP of devices\n";
+				   //switchbox.getPorts(ymflag, outputs); // reads in all the pad specifications and mark which devices are to be tested
+				   //keithley.setParamsEM(4); // sets the EM parameters (some user-input).
+				   //executeRjEM(keithley, SPA, switchbox, outputs); // performs sequential EM runs on the devices listed in the input file, writing EM IV's to appropriate outputs.
+				   //closeFiles(ymflag, switchbox.ndev, outputs, switchbox); // close all the output files
+				   test();
 				   break; }
 		case 32:
 			goto EXIT;
@@ -418,7 +419,7 @@ void menu::executeRjEM(K2400 keithley, SPA4156B SPA, Switchbox switchbox, FILE* 
 		if (switchbox.portSpecs[4][devnum] == "y"){
 			switchbox.closeChan(devnum, "keithley"); // all channels except DUT remain shorted to bias port, DUT is connected to relevant inputs
 			t0 = Clock::now();
-			switchbox.exitSummary[0][devnum] = keithley.RjemSingle(devnum, outputs, switchbox); // writes IV data to output file. keithley will set his output to 0V after finishing EM run
+			switchbox.exitSummary[0][devnum] = keithley.WrapEM(devnum, outputs, switchbox); // writes IV data to output file. keithley will set his output to 0V after finishing EM run
 			t1 = Clock::now();
 			Elapsed = std::chrono::duration_cast<minutes>(t1 - t0);
 			std::cout << "Device ID# " << switchbox.portSpecs[3][devnum].c_str() << " has completed active EM! \n";
@@ -2120,4 +2121,9 @@ void menu::SendMail(std::string emailAddress){
 	fprintf(mailing, program.c_str());
 	fclose(mailing);
 	system("Ruby  mail.rb");
+}
+
+
+void menu::test(){
+	std::cout << "test of reading variable values from file";
 }
