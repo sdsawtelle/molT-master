@@ -46,7 +46,8 @@ public:
 	float healSingle(int devnum, FILE* outputs[36]);
 	float sweepSingle(int devnum, FILE* outputs[36], float Vstart = -1.0);
 	float dwellSingle(int devnum, FILE* outputs[36], float dwellV);
-	float pulseSingle(float voltage);
+
+
 	void setGateVoltage(float Vgate);
 	void holdGateVoltage();
 	void holdDEPVoltage(float voltage, float holdTime);
@@ -95,7 +96,7 @@ private:
 
 	float DoEM(FILE* data, FILE* reading, FILE* output, int devnum, Switchbox switchbox);
 	float DoConstVoltEM(FILE* data, FILE* reading, FILE* output, int devnum, Switchbox switchbox);
-	float CalcResTimely(FILE* reading_log_keithley);
+	float CalcResTimely(FILE* reading_log_keithley, FILE* output);
 	float CalcMetrics(float *diffres, float *delta_res, float *old_resistance, float &voltage_read, float &current_read, FILE* reading_log_keithley, FILE* output);
 	void CalcBenchmark(int &counter);
 	float CalcInitialRes(float at_voltage, FILE* log_keithley, FILE* reading_log_keithley, FILE* output);
@@ -106,8 +107,8 @@ private:
 	// ---------------------------------------------------------------------------------------------------------
 	// --------------------------------------- CONSTANT-V CURVATURE EM -----------------------------------
 	// ---------------------------------------------------------------------------------------------------------
-	float rampup_thresh;
-	float rampback_thresh;
+	float dwell_rampback_percent;
+	float partial_target_resistance;
 
 
 	// ---------------------------------------------------------------------------------------------------------
@@ -150,17 +151,12 @@ private:
 
 
 
-
-
 	float DoSweep(FILE* data, FILE* reading, FILE* output, float delay);
 	float DoDwell(FILE* data, FILE* reading, FILE* output, float delay, float dwellV);
 	void GetReading(char* buffer, std::string &temporary, FILE* output, FILE* log_keithley);
 
 	void KeepTrackIndicators(int &res_consecutive, int &targ_res_consecutive, int &neg_res_consecutive, int &bench_res_consecutive, float &resistance_benchmark, float &resistance_timely, float resistance_initial, float &diffres, float target_resistance, int &counter);
 	
-	void KeepTrackCurvatureIndicators(int &counter_0, int &counter_1, int &counter_2, int &counter_3, int &bestString, float rampup_thresh, float rampback_thresh, int &targ_res_consecutive, float &resistance_benchmark, float &resistance_timely, float old_resistance, float resistance_initial, float &diffres, float target_resistance);
-
-
 
 	float GetResistance(float *diffres, float *old_resistance, float &voltage, float &resistance, FILE* stream, FILE* output, int counter);
 

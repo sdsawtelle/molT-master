@@ -182,40 +182,6 @@ int K2400::switch_current_range(Switchbox switchbox, int devnum, float range_cur
 
 
 // ---------------------------------------------------------------------------------------------------------
-// --------------------------------------- VOLTAGE PULSES -----------------------------------
-// ---------------------------------------------------------------------------------------------------------
-
-float K2400::setParamsPulse(){
-	// auto-zero and auto-range off b/c they increase pulse time
-	GPIBWrite(pna, ":SYS:AZER:STAT OFF");
-	GPIBWrite(pna, ":SOUR:VOLT:RANGE 21");
-	GPIBWrite(pna, ":SENS:FUNC:CONC OFF");
-	GPIBWrite(pna, ":SOUR:VOLT:RANGE:AUTO OFF");
-	GPIBWrite(pna, ":SENS:CURR:RANGE:AUTO OFF");
-	GPIBWrite(pna, ":SENS:FUNC:OFF ALL");
-	// custom voltage sweep mode and set the number of points in the sweep 
-	GPIBWrite(pna, ":SOUR:VOLT:MODE LIST");
-	GPIBWrite(pna, ":TRIG:COUN 2");
-	// adjust trigger & source delay to achieve minimum pulse time
-	GPIBWrite(pna, ":TRIG:DEL 0.0");
-	GPIBWrite(pna, ":SOUR:DEL 0.0");
-	GPIBWrite(pna, ":OUTP ON");
-	return 0;
-}
-
-float K2400::pulseSingle(float voltage){
-	// set voltage values for the pulse
-	char volts[30];
-	sprintf(volts, ":SOUR:LIST:VOLT %f,0", voltage);
-	GPIBWrite(pna, volts);
-	// trigger a single sweep
-	GPIBWrite(pna, ":INIT");
-	return 0;
-}
-
-
-
-// ---------------------------------------------------------------------------------------------------------
 // --------------------------------------- VOLTAGE SWEEPS -----------------------------------
 // ---------------------------------------------------------------------------------------------------------
 
@@ -546,9 +512,9 @@ float K2400::DoDwell(FILE* log_keithley, FILE* reading_log_keithley, FILE* outpu
 
 void K2400::setParamsEM_fromfile(int emType){
 	// EM WITH RAMP BACKS
-	if (emType == 0 | emType == 1 | emType == 3 | emType == 4){
+	if (emType == 0){
 		std::string file_in;
-		std::cout << "Filename containing EM parameters? (no extension)\n";
+		std::cout << "Filename containing Standard EM parameters? (no extension)\n";
 		std::cin >> file_in;
 		file_in += ".txt";
 		std::ifstream infile(file_in);
@@ -558,7 +524,7 @@ void K2400::setParamsEM_fromfile(int emType){
 		rampdown_dwell = 1;
 		volt_down = 0.2;
 
-		std::string trash;
+		char trash;
 		infile >> volt_ramp >> volt_start >> volt_stop;
 		infile >> target_resistance >> avg_series_res;
 		infile >> res_jct_switch[0] >> trash >> res_jct_switch[1] >> trash >> res_jct_switch[2];
@@ -576,24 +542,33 @@ void K2400::setParamsEM_fromfile(int emType){
 
 	// EM WITH DWELLING (RATE VS. POWER)
 	else if (emType == 2){
-		// set parameters for ramping up and exit conditions
-		std::cout << "By how much are we ramping the voltage? (in volts)\n";
-		std::cin >> volt_ramp;
-		std::cout << "What is the stop voltage? \n";
-		std::cin >> volt_stop;
-		std::cout << "At what voltage do we want to start? \n";
-		std::cin >> volt_start;
-		std::cout << "What is the target resistance? \n";
-		std::cin >> target_resistance;
-		std::cout << "(NOTE: exit condition is target R _or_ 2000 data points at the dwell voltage.)\n";
+		std::string file_in;
+		std::cout << "Filename containing Constant-Voltage EM parameters? (no extension)\n";
+		std::cin >> file_in;
+		file_in += ".txt";
+		std::ifstream infile(file_in);
 
-		// decide what will be the triggers for indicating EM onset and indicating rapid EM needing a ramp back
-		std::cout << "What is the percentage resistance difference that will prevent voltage incrementing (float format)?\n";
-		std::cin >> rampup_thresh;
-		std::cout << "What is the percentage resistance difference that will trigger dwelling voltage (float format)?\n";
-		std::cin >> rampback_thresh;
+		delay = 0;
+		nplc = 1;
+		rampdown_dwell = 1;
+		volt_down = 0.2;
+
+		char trash;
+		infile >> volt_ramp >> volt_start >> volt_stop;
+		infile >> target_resistance >> avg_series_res;
+		infile >> res_jct_switch[0] >> trash >> res_jct_switch[1] >> trash >> res_jct_switch[2];
+		infile >> n_percent_trigger[0] >> trash >> n_percent_trigger[1] >> trash >> n_percent_trigger[2] >> trash >> n_percent_trigger[3];
+		infile >> bench_percent_tols[0] >> trash >> bench_percent_tols[1] >> trash >> bench_percent_tols[2] >> trash >> bench_percent_tols[3];
+		infile >> n_ndr_trigger[0] >> trash >> n_ndr_trigger[1] >> trash >> n_ndr_trigger[2] >> trash >> n_ndr_trigger[3];
+		infile >> n_delta_trigger[0] >> trash >> n_delta_trigger[1] >> trash >> n_delta_trigger[2] >> trash >> n_delta_trigger[3];
+		infile >> partial_target_resistance >> dwell_rampback_percent;
+
+		std::cout << "What is ramp type that dictates conditions for ramping back? Options are: \n\n";
+		std::cout << "(1) Consecutive resistance change R > R_bench*(1+tol) and consecutive NDR.\n";
+		std::cout << "(2) Consecutive NORMED resistance change R > (Rjct + R_avgseries)*(1+tol) and consecutive NDR.\n";
+		std::cout << "(3) Consecutive delta(R) and consecutive NDR.\n";
+		std::cin >> rampType;
 	}
-
 
 	// adding this in in the hopes that it fixes the bizarre problem of the EM algorithm writing four columns of data...
 	configure();
@@ -646,19 +621,19 @@ float K2400::WrapEM(int emType, int devnum, FILE* outputs[36], Switchbox switchb
 	switch (emType){
 	case 0:{ ////////////////////////////// NORMAL EM ///////////////////////////////////
 		fprintf(output, "DELAY (SEC) %.3f ; RAMP (V) %.4f ; MAX VOLT (V) %.2f ; RAMP RESISTANCE TOLERANCE (low R) (float %%) %.3f ; RAMP RESISTANCE TOLERANCE (low-med R) (float %%) %.3f ; RAMP RESISTANCE TOLERANCE (med-high R) (float %%) %.3f ; RAMP RESISTANCE TOLERANCE (high R) (float %%) %.3f ; TARGET RESISTANCE (Ohms) %.9f ; RAMP DOWN (V) %.3f ; NUM CONSEC % HITS (low R) %i ; NUM CONSEC % HITS (low-med R) %i ;  NUM CONSEC % HITS (med-high R) %i ; NUM CONSEC % HITS (high R) %i ; NUM CONSEC NDR (low R) %i ; NUM CONSEC NDR (low-med R) %i ; NUM CONSEC NDR (med-high R) %i ; NUM CONSEC NDR (high R) %i ; NUM CONSEC DELTAR (low R) %i ; NUM CONSEC DELTAR (low-med R) %i ; NUM CONSEC DELTAR (med-high R) %i ; NUM CONSEC DELTAR (high R) %i ; LOW/LOW-MED SWITCH RESISTANCE (ohms) %.9f ; LOW-MED/MED-HIGH SWITCH RESISTANCE (ohms) %.9f ; MED-HIGH/HIGH SWITCH RESISTANCE (ohms) %.9f ;  INTEGRATION TIME (PLC) %i ; RAMPDOWN DWELL (msec/mV) %.4i ; TEMPERATURE (K) %.4f \n ", delay, volt_ramp, volt_stop, bench_percent_tols[0], bench_percent_tols[1], bench_percent_tols[2], bench_percent_tols[3], target_resistance, volt_down, n_percent_trigger[0], n_percent_trigger[1], n_percent_trigger[2], n_percent_trigger[3], n_ndr_trigger[0], n_ndr_trigger[1], n_ndr_trigger[2], n_ndr_trigger[3], n_delta_trigger[0], n_delta_trigger[1], n_delta_trigger[2], n_delta_trigger[3], res_jct_switch[0], res_jct_switch[1], res_jct_switch[2], nplc, rampdown_dwell, temperature);
-		fprintf(output, "voltage,current,resistance \n");
+		fprintf(output, "voltage,current,resistance,volt_range,curr_range\n");
 		fflush(output);
 
-		//do measurement and return the final voltage
+		//Do Standard EM measurement and return the final voltage
 		exitV = DoEM(log_keithley, reading_log_keithley, output, devnum, switchbox); //actual measurement
 		break; }
 
 	case 1:{ ////////////////////////////// CONSTANT-VOLTAGE EM (RATE VS. POW) ///////////////////////////////////
-		fprintf(output, "TARGET RESISTANCE (Ohms) %.9f ; VOLTAGE STEP (V) %.3f ; %% CHANGE THAT PREVENTS STEP (float %%) %.3f ; %% CHANGE THAT TRIGGERS DWELL (float %%) %.3f ; TEMPERATURE (K) %.4f\n", target_resistance, volt_ramp, rampup_thresh, rampback_thresh, temperature);
-		fprintf(output, "voltage,current,resistance \n");
+		fprintf(output, "DELAY (SEC) %.3f ; RAMP (V) %.4f ; MAX VOLT (V) %.2f ; RAMP RESISTANCE TOLERANCE (low R) (float %%) %.3f ; RAMP RESISTANCE TOLERANCE (low-med R) (float %%) %.3f ; RAMP RESISTANCE TOLERANCE (med-high R) (float %%) %.3f ; RAMP RESISTANCE TOLERANCE (high R) (float %%) %.3f ; TARGET RESISTANCE (Ohms) %.9f ; RAMP DOWN (V) %.3f ; NUM CONSEC % HITS (low R) %i ; NUM CONSEC % HITS (low-med R) %i ;  NUM CONSEC % HITS (med-high R) %i ; NUM CONSEC % HITS (high R) %i ; NUM CONSEC NDR (low R) %i ; NUM CONSEC NDR (low-med R) %i ; NUM CONSEC NDR (med-high R) %i ; NUM CONSEC NDR (high R) %i ; NUM CONSEC DELTAR (low R) %i ; NUM CONSEC DELTAR (low-med R) %i ; NUM CONSEC DELTAR (med-high R) %i ; NUM CONSEC DELTAR (high R) %i ; LOW/LOW-MED SWITCH RESISTANCE (ohms) %.9f ; LOW-MED/MED-HIGH SWITCH RESISTANCE (ohms) %.9f ; MED-HIGH/HIGH SWITCH RESISTANCE (ohms) %.9f ;  INTEGRATION TIME (PLC) %i ; RAMPDOWN DWELL (msec/mV) %.4i ; TEMPERATURE (K) %.4f ; partial_target_resistance (ohms) %0.9f ; dwell_rampback_percent %0.3f\n ", delay, volt_ramp, volt_stop, bench_percent_tols[0], bench_percent_tols[1], bench_percent_tols[2], bench_percent_tols[3], target_resistance, volt_down, n_percent_trigger[0], n_percent_trigger[1], n_percent_trigger[2], n_percent_trigger[3], n_ndr_trigger[0], n_ndr_trigger[1], n_ndr_trigger[2], n_ndr_trigger[3], n_delta_trigger[0], n_delta_trigger[1], n_delta_trigger[2], n_delta_trigger[3], res_jct_switch[0], res_jct_switch[1], res_jct_switch[2], nplc, rampdown_dwell, temperature, partial_target_resistance, dwell_rampback_percent);
+		fprintf(output, "voltage,current,resistance,volt_range,curr_range\n");
 		fflush(output);
 
-		// Do measurement and return the final voltage
+		// Do Constant-Voltage EM measurement and return the final voltage
 		exitV = DoConstVoltEM(log_keithley, reading_log_keithley, output, devnum, switchbox); //actual measurement
 		break; }
 
@@ -841,13 +816,14 @@ float K2400::DoConstVoltEM(FILE* log_keithley, FILE* reading_log_keithley, FILE*
 	resistance_timely = 0; // R measured on most recent V step. why is this an attribute of keithley?
 	voltage_write = CalcInitialRes(voltage_write, log_keithley, reading_log_keithley, output);
 
-
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////
+	///////////////////// NORMAL EM FOR 20 OHMS TO FIT R_SERIES AND R_JCT_INITIAL ///////////////////////////
 	std::cout << "=======================================================================\n";
 	std::cout << "Press the 'F12' key to interrupt active EM...\n";
 	std::cout << "=======================================================================\n";
 
-	//execute loop until we get required resistance increase or F12 interrupt
-	while ((resistance_timely <= target_resistance + initial_res) && !GetAsyncKeyState(VK_F12)){
+	//execute loop until we get required resistance *at end of ramp* increase or F12 interrupt
+	while ((resistance_timely <= partial_target_resistance + initial_res) && counter == 0 && !GetAsyncKeyState(VK_F12)){
 
 		// Set the next voltage point and get a reading
 		voltage_write += volt_ramp;
@@ -866,51 +842,6 @@ float K2400::DoConstVoltEM(FILE* log_keithley, FILE* reading_log_keithley, FILE*
 
 		// Update the counters for events we care about
 		UpdateCounters(counter_delta, counter_percent, counter_ndr, counter_normed_percent, counter, diffres, delta_res);
-
-
-		///////////////////////////////////////////////////////////////////////////////////////////////////////////
-		////////////////////////////////// RAMP BACK WITH COMPLICATED RANGE CHANGE ////////////////////////////////
-
-		//// Based on counters, trigger rampback OR consider range change.
-		//if (counter_percent >= delta_counts || counter_ndr >= ndr_counts){
-		//	voltage_write = 0.7*voltage_write;
-		//	counter_percent = 0;
-		//	counter_ndr = 0;
-		//	counter = 0;
-		//}
-		//else{
-		//	// Based on the present reading, determine desired V, I ranges
-		//	rangeV = determine_voltage_range(voltage_read);
-		//	rangeI = determine_current_range(current_read);
-		//	//If either of the desired ranges are not the present ranges then we need to act:
-		//	if ((rangeV != present_volt_range) || (rangeI != present_curr_range)){
-		//		// First, if we might be in the middle of EM then instead of range changing just do a ramp back
-		//		if ((counter_percent > 1 || counter_ndr > 1) && counter != 1){
-		//			voltage_write = 0.6*voltage_write;
-		//			counter_percent = 0;
-		//			counter_ndr = 0;
-		//			counter = 0;
-		//		}
-		//		// Else if we aren't in the middle of EM then execute the change carefully
-		//		else {
-		//			voltage_write = voltage_write - 20 * volt_ramp;
-		//			sprintf(buffer, ":SOUR:VOLT %f\n", voltage_write);
-		//			if (rangeV != present_volt_range){
-		//				switch_voltage_range(switchbox, devnum, rangeV);
-		//			}
-		//			if (rangeI != present_curr_range){
-		//				switch_current_range(switchbox, devnum, rangeI);
-		//			}
-		//			for (int k = 0; k < 20; k++){
-		//				voltage_write += volt_ramp;
-		//				sprintf(buffer, ":SOUR:VOLT %f\n", voltage_write);
-		//				GPIBWrite(pna, buffer);
-		//				Sleep(15);
-		//			}
-		//		}
-		//	}
-		//}
-
 
 		///////////////////////////////////////////////////////////////////////////////////////////////////////////
 		////////////////////////////////// RAMP BACK WITH SIMPLE CURRENT RANGE CHANGE ////////////////////////////////
@@ -947,12 +878,55 @@ float K2400::DoConstVoltEM(FILE* log_keithley, FILE* reading_log_keithley, FILE*
 		counter++;
 	}
 
+
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////
+	///////////////////// DWELLING CONSTANT-VOLTAGE EM ///////////////////////////
+	// Undo the 30% voltage ramp back and instead only go back %10 
+	voltage_write = 1.428*voltage_write*dwell_rampback_percent;
+	sprintf(buffer, ":SOUR:VOLT %f\n", voltage_write);
+	GPIBWrite(pna, buffer);
+	
+	typedef std::chrono::high_resolution_clock Clock;
+	Clock::time_point t0;
+	Clock::time_point t1;
+	typedef std::chrono::milliseconds milliseconds;
+	milliseconds Elapsed;
+	t0 = Clock::now();
+
+	while (resistance_timely < target_resistance && !GetAsyncKeyState(VK_F12)){
+		t1 = Clock::now();
+		Elapsed = std::chrono::duration_cast<milliseconds>(t1 - t0);
+		fprintf(output, "%.2f, ", Elapsed.count()); // print elapsed time to output file
+		GetReading(buffer, temporary, output, log_keithley);  //read keithley, write to output and log files
+		CalcResTimely(reading_log_keithley, output); // calculate new resistance and write to output file
+		std::cout << resistance_timely << "\n";
+	}
 	return voltage_write;
 }
 
 
 ///////////////////// EM SUPPORT FUNCTIONS
-float K2400::CalcResTimely(FILE* reading_log_keithley){
+void K2400::GetReading(char* buffer, std::string &temporary, FILE* output, FILE* log_keithley){
+	sprintf(buffer, "");
+	//ask the device for a readings
+
+	// wait, why is this write necessary before executing read?
+	GPIBWrite(pna, ":READ?");
+	// read the voltage and intensity value given
+	GPIBRead(pna, buffer);
+	//save to log_file and flush the stream
+	fprintf(log_keithley, "%s", buffer);
+	fflush(log_keithley);
+	//save to the output file, changing the format of what we write, and flush the stream
+	temporary.erase();
+	temporary = buffer;
+	temporary.erase(temporary.length() - 1, 1);
+	temporary += ",";
+	fprintf(output, "%s", temporary.c_str());
+	fflush(output);
+}
+
+float K2400::CalcResTimely(FILE* reading_log_keithley, FILE* output){
 
 	//initialize/define the local variables
 	char voltage_new[14]; //here we load the string of numbers for voltage before we convert it into a number
@@ -977,6 +951,12 @@ float K2400::CalcResTimely(FILE* reading_log_keithley){
 		fgets(trash, 2, reading_log_keithley);
 	}
 	resistance = voltage_new_num / current_new_num;
+
+	//print the resistance and ranges to output file
+	fprintf(output, "%f, ", resistance);
+	fflush(output);
+	fprintf(output, "%f, %f\n", present_volt_range, present_curr_range);
+	fflush(output);
 
 	// resistance from most recent measurement;
 	return resistance;
@@ -1027,6 +1007,7 @@ float K2400::CalcMetrics(float *diffres, float *delta_res, float *old_resistance
 	fprintf(output, "%f, ", resistance);
 	fflush(output);
 	fprintf(output, "%f, %f\n", present_volt_range, present_curr_range);
+	fflush(output);
 
 	//the function returns the value of resistance;
 	return resistance;
@@ -1036,8 +1017,8 @@ void K2400::CalcBenchmark(int &counter){
 	///////////////////////////////////////////////////////////////
 	//Running Average R calculation and display, for user monitoring purposes only.
 	///////////////////////////////////////////////////////////////
-	int highcount = 8;
-	int lowcount = 3;
+	int highcount = 10;
+	int lowcount = 5;
 	if (counter < highcount){
 		if (counter < lowcount){
 			benchmark_resistance = resistance_timely;
@@ -1063,8 +1044,8 @@ float K2400::CalcInitialRes(float at_voltage, FILE* log_keithley, FILE* reading_
 	initial_res = 0;
 
 	// Ignore first four voltage steps, compute average resistance on next five steps
-	int highcount = 8;
-	int lowcount = 4;
+	int highcount = 10;
+	int lowcount = 5;
 	for (int counter = 0; counter <= highcount; counter++){
 
 		// Set the next voltage point and get a reading
@@ -1072,7 +1053,7 @@ float K2400::CalcInitialRes(float at_voltage, FILE* log_keithley, FILE* reading_
 		sprintf(buffer, ":SOUR:VOLT %f\n", at_voltage);
 		GPIBWrite(pna, buffer);
 		GetReading(buffer, temporary, output, log_keithley);  //read keithley, write to output and log files
-		resistance_timely = CalcResTimely(reading_log_keithley);
+		resistance_timely = CalcResTimely(reading_log_keithley, output);
 
 		// Update running average of initial resistance
 		if (counter >= lowcount){
@@ -1227,25 +1208,6 @@ float K2400::GetResistance(float *diffres, float *old_resistance, float &voltage
 	return resistance;
 }
 
-void K2400::GetReading(char* buffer, std::string &temporary, FILE* output, FILE* log_keithley){
-	sprintf(buffer, "");
-	//ask the device for a readings
-
-	// wait, why is this write necessary before executing read?
-	GPIBWrite(pna, ":READ?");
-	// read the voltage and intensity value given
-	GPIBRead(pna, buffer);
-	//save to log_file and flush the stream
-	fprintf(log_keithley, "%s", buffer);
-	fflush(log_keithley);
-	//save to the output file, changing the format of what we write, and flush the stream
-	temporary.erase();
-	temporary = buffer;
-	temporary.erase(temporary.length() - 1, 1);
-	temporary += ",";
-	fprintf(output, "%s", temporary.c_str());
-	fflush(output);
-}
 
 void K2400::KeepTrackIndicators(int &res_consecutive, int &targ_res_consecutive, int &neg_res_consecutive, int &bench_res_consecutive, float &resistance_benchmark,
 	float &resistance_timely, float resistance_initial, float &diffres, float target_resistance, int &counter){
@@ -1370,77 +1332,6 @@ void K2400::KeepTrackIndicators(int &res_consecutive, int &targ_res_consecutive,
 
 }
 
-void K2400::KeepTrackCurvatureIndicators(int &counter_0, int &counter_1, int &counter_2, int &counter_3, int &bestString, float rampup_thresh, float rampback_thresh, int &targ_res_consecutive, float &resistance_benchmark,
-	float &resistance_timely, float old_resistance, float resistance_initial, float &diffres, float target_resistance){
-
-	//if it is the first measurement "down the hill", use it to set benchmark. Reject first n data points up to lowcount, then use next
-	// m data points up to highcount to generate an average resistance as benchmark.
-	int highcount = 15;
-	int lowcount = 5;
-
-	if (counter_0 < highcount){
-		if (counter_0 < lowcount){
-			resistance_benchmark = resistance_timely;
-		}
-		else{
-			resistance_benchmark = (resistance_benchmark*(counter_0 - lowcount + 1) + resistance_timely) / (counter_0 - lowcount + 2);
-		}
-	}
-
-	if (counter_0 == highcount){
-		char bench[100] = "";
-		sprintf(bench, "avg resistance is %f", resistance_benchmark);
-		std::cout << "BENCHMARK COMPUTED - " << resistance_benchmark << " ohms. \n";
-	}
-
-	// bestString tracks number of consecutive measurements where R has increased compared to previous measurement
-	// increment bestString for whether this data point has a higher resistance than the previous one
-	if ((counter_0 > highcount) && (resistance_timely >= old_resistance)){
-		counter_2 = counter_2 + 1;
-		bestString = max(bestString, counter_2);
-		//std::cout << "EM ONSET DETECTED - consecutive points is " << counter_2 << ".\n";
-	}
-	else {
-		bestString = max(bestString, counter_2);
-		counter_2 = 0;
-	}
-
-	//// 160303 Change counter_2 from looking for consecutive increases in R to looking for non-consecutive count of R > (1+tol)*Rbench
-	//// increment for whether this data point has a resistance greater than the benchmark by some tolerance
-	//if ((counter_0 > highcount) && (resistance_timely >= (1+rampback_thresh)*resistance_benchmark)){
-	//	counter_2 = counter_2 + 1;
-	//	bestString = counter_2;
-	//	//std::cout << "EM ONSET DETECTED - consecutive points is " << counter_2 << ".\n";
-	//}
-	//else {
-	//	/*bestString = max(bestString, counter_2);*/
-	//	//counter_2 = 0;
-	//}
-
-
-
-	//// increment for whether v/i metric gives us R such that we want to NOT increment the voltage
-	//if ((counter_0 > highcount && (resistance_timely >= (resistance_benchmark*(1 + rampup_thresh))))){
-	//	counter_2 = counter_2 + 1;
-	//	std::cout << "EM ONSET DETECTED - consecutive points is " << counter_2 << ".\n";
-	//}
-	//else counter_2 = 0;
-
-	//// increment for whether v/i metric gives us R such that we want to ramp back the voltage
-	//if ((counter_0 > highcount && (resistance_timely >= (resistance_benchmark*(1 + rampback_thresh))))){
-	//	counter_3 = counter_3 + 1;
-	//	std::cout << "RAPID EM DETECTED - consecutive points is " << counter_3 << ".\n";
-	//}
-	//else counter_3 = 0;
-
-	// update the indicator for whether we have a string of consecutive target resistance hits. We are looking only for stuff above
-	if ((resistance_timely >(resistance_initial + target_resistance)) | (resistance_timely<0)){
-		targ_res_consecutive = targ_res_consecutive + 1;
-	}
-	else targ_res_consecutive = 0;
-
-
-}
 
 bool K2400::CheckRampDown(float resistance_timely, float resistance_initial, int &res_consecutive, int &bench_res_consecutive, int &neg_res_consecutive){
 

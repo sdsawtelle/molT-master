@@ -27,7 +27,6 @@ void menu::menu_start(K2400 keithley, SPA4156B SPA, Switchbox switchbox){
 	switchbox.getAllPorts(); // reads in all the pad specifications, reformats them for switchbox, and creates output file streams
 
 	emailAddress = "sdsawtelle@gmail.com";
-
 	std::cout << "What is the ID for this chip?\n";
 	std::cin >> chip_ID;
 	std::cout << "What is the Feed-thru ID for this Group?\n";
@@ -41,15 +40,15 @@ void menu::menu_start(K2400 keithley, SPA4156B SPA, Switchbox switchbox){
 		std::cout << "   (2)  OPEN ALL possible routes (0101:1028) \n\n" ;
 		std::cout << "   (3)  Perform NANOWIRE SAMPLING YIELD measurements on a group of devices\n";
 
-
 		//std::cout << "   (6)  Execute IV SWEEP OF THE GATELINE for the first listed device \n\n";	
 		//std::cout << "   (4)  Perform GATE LEAKAGE SAMPLING YIELD measurements on a group of devices\n";
 		//std::cout << "   (13)  Perform GATE LEAKAGE SWEEPS (IG) measurements on a group of devices\n";
 
-
 		std::cout << "   (12)  Take IV SWEEPS of a group of devices\n";
 		//std::cout << "   (14)  Take GATED IV SWEEPS (OPTIONALLY WITH LEAKAGE) of a group of devices \n";
 
+		//std::cout << "   (16)  Connect a device for IETS (OPTIONALLY GATED)\n";
+		//std::cout << "   (24)  Hold DEP VOLTAGE across all devices\n\n";
 
 		std::cout << "   (7)  Execute EM ON A GROUP of devices \n";
 		std::cout << "	 (29)  Execute CONSTANT VOLTAGE EM (Rate vs. Power) on a group of devices. \n\n";
@@ -67,8 +66,7 @@ void menu::menu_start(K2400 keithley, SPA4156B SPA, Switchbox switchbox){
 
 
 
-		//std::cout << "   (16)  Connect a device for IETS (OPTIONALLY GATED)\n";
-		//std::cout << "   (24)  Hold DEP VOLTAGE across all devices\n\n";
+
 
 
 		std::cout << "   (32)  EXIT \n\n";
@@ -124,6 +122,7 @@ void menu::menu_start(K2400 keithley, SPA4156B SPA, Switchbox switchbox){
 		case 7:{	
 				   // Execute EM ON A GROUP of devices\n";
 				   int emType = 0; // normal EM
+				   keithley.setParamsEM_fromfile(emType); // sets the EM parameters
 				   switchbox.getPorts(ymflag, outputs); // reads in all the pad specs and mark devices to be tested
 				   keithley.setParamsEM_fromfile(emType); // sets the EM parameters
 				   keithley.initializeEM(emType); //set ranges, integration time, delay and turn OUTPUT ON at 0 V
@@ -218,12 +217,7 @@ void menu::menu_start(K2400 keithley, SPA4156B SPA, Switchbox switchbox){
 					switchbox.getPorts(ymflag, outputs);
 					keithleyDEP(keithley, switchbox, outputs);
 					break; }
-		case 25:{
-					// Keithley pulses on a group of devices
-					switchbox.getPorts(ymflag, outputs);
-					executeKeithleyPulse(keithley, SPA, switchbox, outputs);
-					closeFiles(ymflag, switchbox.ndev, outputs, switchbox);
-					break; }
+
 		case 29:{
 				   // Execute EM WITH CURVATURE DETECTION ON A GROUP of devices\n";
 					int emType = 1; // constant-voltage EM (rate vs. power)
@@ -373,7 +367,6 @@ void menu::executeGatedIV(int leakageFlag, SPA4156B SPA, Switchbox switchbox, FI
 
 
 
-
 void menu::executeEM(int emType, K2400 keithley, SPA4156B SPA, Switchbox switchbox, FILE* outputs[36]){
 	// get a filename and open a file that will be used to write the summary info to
 	std::string file_summary;
@@ -426,90 +419,6 @@ void menu::executeEM(int emType, K2400 keithley, SPA4156B SPA, Switchbox switchb
 }
 
 
-void menu::executeKeithleyPulse(K2400 keithley, SPA4156B SPA, Switchbox switchbox, FILE* outputs[36]){
-
-	keithley.setParamsPulse();
-
-	float startV;
-	std::cout << "What is starting voltage to pulse (in V)? \n";
-	std::cin >> startV;
-
-	float incrementV;
-	std::cout << "What is the voltage by which to increment the voltage pulse (in V)? \n";
-	std::cin >> incrementV;
-
-	float targetR;
-	std::cout << "What is the resistance at which to stop pulsing (in ohms)? \n";
-	std::cin >> targetR;
-
-	//// get a filename and open a file that will be used to write the summary info to
-	//std::string file_summary;
-	//std::cout << "What is the filename stem to use for the KeithleySweep Outcome Summary? \n";
-	//std::cin >> file_summary;
-	//char filebuffer[1024] = "";
-	//sprintf(filebuffer, "%s_%s_KeithleySweepSummary.txt", file_summary.c_str(), chip_ID.c_str());
-	//FILE *summary = fopen(filebuffer, "w+");
-	//if (summary == NULL) { // check that fopen worked correctly
-	//	std::cout << "fopen has failed for the output file " << filebuffer << "\n";
-	//}
-
-
-	std::cout << "=======================================================================\n";
-	std::cout << "Press the 'F12' key to interrupt active EM on a device...\n";
-	std::cout << "=======================================================================\n";
-	Sleep(500);
-
-	typedef std::chrono::high_resolution_clock Clock;
-	Clock::time_point t0;
-	Clock::time_point t1;
-
-	typedef std::chrono::minutes minutes;
-	minutes Elapsed;
-
-	float voltage = startV;
-	float resistance = 0;
-	char buffer[1024];
-
-	for (int devnum = 0; devnum < switchbox.ndev; devnum++){
-		if (switchbox.portSpecs[4][devnum] == "y"){
-			t0 = Clock::now();
-			sprintf(buffer, "voltage, resistance_100mV\n");
-			fprintf(outputs[devnum], buffer);
-			resistance = 0;
-			voltage = startV;
-			while (resistance < targetR && !GetAsyncKeyState(VK_F12)){
-				switchbox.closeChan(devnum, "keithley"); // all channels except DUT remain shorted to bias port, DUT is connected to relevant inputs
-				keithley.pulseSingle(voltage);
-				std::cout << "Pulse sent to device was " << voltage << " Volts. \n";
-				switchbox.openChan(devnum, "keithley", 1); // get back to the state of all output ports shorted to keithley ground
-				resistance = executeGapYield(devnum, SPA, switchbox); // will print out the actual resistance sampled at 100mV 
-				sprintf(buffer, "%.3f, %.3f\n", voltage, resistance);
-				fprintf(outputs[devnum], buffer);
-				voltage += incrementV;
-			}
-			t1 = Clock::now();
-			Elapsed = std::chrono::duration_cast<minutes>(t1 - t0);
-			std::cout << "Device ID# " << switchbox.portSpecs[3][devnum].c_str() << " has completed pulsed EM! \n";
-			std::cout << "Elapsed time of pulsed EM was " << Elapsed.count() << " minutes. \n";
-			switchbox.exitSummary[1][devnum] = executeGapYield(devnum, SPA, switchbox); // will print out the actual resistance sampled at 100mV 
-			switchbox.exitSummary[2][devnum] = Elapsed.count();
-			std::cout << "---------------------------------------------------\n";
-		}
-	}
-
-	//fprintf(summary, "Chip ID, Device Ports, Run Type, Temperature (K), Keithley Sweep exit V (V), R @ 100mV after Keithley Sweep (ohms), Elapsed Time of Keithley Sweep (min))\n"); // header
-	//
-	//for (int devnum = 0; devnum < switchbox.ndev; devnum++){
-	//	if (switchbox.portSpecs[4][devnum] == "y"){
-	//		sprintf(buffer, "%s, %s, EM, %.3f, %.3f, %.3f, %.1f\n", chip_ID.c_str(), switchbox.portSpecs[3][devnum].c_str(), temperature, switchbox.exitSummary[0][devnum], switchbox.exitSummary[1][devnum], switchbox.exitSummary[2][devnum]);
-	//		fprintf(summary, buffer);
-	//	}
-	//}
-	//fclose(summary);
-
-	SendMail(emailAddress);
-
-}
 void menu::keithleyDEP(K2400 keithley, Switchbox switchbox, FILE* outputs[36]){
 
 	float Vsample, holdTime;
@@ -640,8 +549,6 @@ void menu::executeKeithleySweep(K2400 keithley, SPA4156B SPA, Switchbox switchbo
 	SendMail(emailAddress);
 
 }
-
-
 
 void menu::executeKeithleyDwell(K2400 keithley, SPA4156B SPA, Switchbox switchbox, FILE* outputs[36]){
 
