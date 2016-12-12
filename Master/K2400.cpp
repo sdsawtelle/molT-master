@@ -296,7 +296,7 @@ float K2400::WrapEM(int emType, int devnum, FILE* outputs[36], Switchbox switchb
 
 	switch (emType){
 	case 0:{ ////////////////////////////// NORMAL EM ///////////////////////////////////
-		fprintf(output, "DELAY (SEC) %.3f ; RAMP (V) %.4f ; MAX VOLT (V) %.2f ; RAMP RESISTANCE TOLERANCE (low R) (float %%) %.3f ; RAMP RESISTANCE TOLERANCE (low-med R) (float %%) %.3f ; RAMP RESISTANCE TOLERANCE (med-high R) (float %%) %.3f ; RAMP RESISTANCE TOLERANCE (high R) (float %%) %.3f ; TARGET RESISTANCE (Ohms) %.9f ; RAMP DOWN (V) %.3f ; NUM CONSEC % HITS (low R) %i ; NUM CONSEC % HITS (low-med R) %i ;  NUM CONSEC % HITS (med-high R) %i ; NUM CONSEC % HITS (high R) %i ; NUM CONSEC NDR (low R) %i ; NUM CONSEC NDR (low-med R) %i ; NUM CONSEC NDR (med-high R) %i ; NUM CONSEC NDR (high R) %i ; NUM CONSEC DELTAR (low R) %i ; NUM CONSEC DELTAR (low-med R) %i ; NUM CONSEC DELTAR (med-high R) %i ; NUM CONSEC DELTAR (high R) %i ; LOW/LOW-MED SWITCH RESISTANCE (ohms) %.9f ; LOW-MED/MED-HIGH SWITCH RESISTANCE (ohms) %.9f ; MED-HIGH/HIGH SWITCH RESISTANCE (ohms) %.9f ;  INTEGRATION TIME (PLC) %i ; RAMPDOWN DWELL (msec/mV) %.4i ; TEMPERATURE (K) %.4f \n ", delay, volt_ramp, volt_stop, bench_percent_tols[0], bench_percent_tols[1], bench_percent_tols[2], bench_percent_tols[3], target_resistance, volt_down, n_percent_trigger[0], n_percent_trigger[1], n_percent_trigger[2], n_percent_trigger[3], n_ndr_trigger[0], n_ndr_trigger[1], n_ndr_trigger[2], n_ndr_trigger[3], n_delta_trigger[0], n_delta_trigger[1], n_delta_trigger[2], n_delta_trigger[3], res_jct_switch[0], res_jct_switch[1], res_jct_switch[2], nplc, rampdown_dwell, temperature);
+		fprintf(output, "DELAY (SEC) %.3f ; RAMP (V) %.4f ; MAX VOLT (V) %.2f ; RAMP RESISTANCE TOLERANCE (low R) (float %%) %.3f ; RAMP RESISTANCE TOLERANCE (low-med R) (float %%) %.3f ; RAMP RESISTANCE TOLERANCE (med-high R) (float %%) %.3f ; RAMP RESISTANCE TOLERANCE (high R) (float %%) %.3f ; TARGET RESISTANCE (Ohms) %.9f ; RAMP DOWN (V) %.3f ; NUM CONSEC % HITS (low R) %i ; NUM CONSEC % HITS (low-med R) %i ;  NUM CONSEC % HITS (med-high R) %i ; NUM CONSEC % HITS (high R) %i ; NUM CONSEC NDR (low R) %i ; NUM CONSEC NDR (low-med R) %i ; NUM CONSEC NDR (med-high R) %i ; NUM CONSEC NDR (high R) %i ; NUM CONSEC DELTAR (low R) %i ; NUM CONSEC DELTAR (low-med R) %i ; NUM CONSEC DELTAR (med-high R) %i ; NUM CONSEC DELTAR (high R) %i ; DELTA TOL (low R) %.3f ; DELTA TOL (low-med R) %.3f ; DELTA TOL (med-high R) %.3f ; DELTA TOL(high R) %.3f ; LOW/LOW-MED SWITCH RESISTANCE (ohms) %.9f ; LOW-MED/MED-HIGH SWITCH RESISTANCE (ohms) %.9f ; MED-HIGH/HIGH SWITCH RESISTANCE (ohms) %.9f ;  INTEGRATION TIME (PLC) %i ; RAMPDOWN DWELL (msec/mV) %.4i ; TEMPERATURE (K) %.4f \n ", delay, volt_ramp, volt_stop, bench_percent_tols[0], bench_percent_tols[1], bench_percent_tols[2], bench_percent_tols[3], target_resistance, volt_down, n_percent_trigger[0], n_percent_trigger[1], n_percent_trigger[2], n_percent_trigger[3], n_ndr_trigger[0], n_ndr_trigger[1], n_ndr_trigger[2], n_ndr_trigger[3], n_delta_trigger[0], n_delta_trigger[1], n_delta_trigger[2], n_delta_trigger[3], delta_tols[0], delta_tols[1], delta_tols[2], delta_tols[3], res_jct_switch[0], res_jct_switch[1], res_jct_switch[2], nplc, rampdown_dwell, temperature);
 		fprintf(output, "voltage,current,resistance,volt_range,curr_range\n");
 		fflush(output);
 
@@ -305,7 +305,7 @@ float K2400::WrapEM(int emType, int devnum, FILE* outputs[36], Switchbox switchb
 		break; }
 
 	case 1:{ ////////////////////////////// CONSTANT-VOLTAGE EM (RATE VS. POW) ///////////////////////////////////
-		fprintf(output, "DELAY (SEC) %.3f ; RAMP (V) %.4f ; MAX VOLT (V) %.2f ; RAMP RESISTANCE TOLERANCE (low R) (float %%) %.3f ; RAMP RESISTANCE TOLERANCE (low-med R) (float %%) %.3f ; RAMP RESISTANCE TOLERANCE (med-high R) (float %%) %.3f ; RAMP RESISTANCE TOLERANCE (high R) (float %%) %.3f ; TARGET RESISTANCE (Ohms) %.9f ; RAMP DOWN (V) %.3f ; NUM CONSEC % HITS (low R) %i ; NUM CONSEC % HITS (low-med R) %i ;  NUM CONSEC % HITS (med-high R) %i ; NUM CONSEC % HITS (high R) %i ; NUM CONSEC NDR (low R) %i ; NUM CONSEC NDR (low-med R) %i ; NUM CONSEC NDR (med-high R) %i ; NUM CONSEC NDR (high R) %i ; NUM CONSEC DELTAR (low R) %i ; NUM CONSEC DELTAR (low-med R) %i ; NUM CONSEC DELTAR (med-high R) %i ; NUM CONSEC DELTAR (high R) %i ; LOW/LOW-MED SWITCH RESISTANCE (ohms) %.9f ; LOW-MED/MED-HIGH SWITCH RESISTANCE (ohms) %.9f ; MED-HIGH/HIGH SWITCH RESISTANCE (ohms) %.9f ;  INTEGRATION TIME (PLC) %i ; RAMPDOWN DWELL (msec/mV) %.4i ; TEMPERATURE (K) %.4f ; partial_target_resistance (ohms) %0.9f ; dwell_rampback_percent %0.3f\n ", delay, volt_ramp, volt_stop, bench_percent_tols[0], bench_percent_tols[1], bench_percent_tols[2], bench_percent_tols[3], target_resistance, volt_down, n_percent_trigger[0], n_percent_trigger[1], n_percent_trigger[2], n_percent_trigger[3], n_ndr_trigger[0], n_ndr_trigger[1], n_ndr_trigger[2], n_ndr_trigger[3], n_delta_trigger[0], n_delta_trigger[1], n_delta_trigger[2], n_delta_trigger[3], res_jct_switch[0], res_jct_switch[1], res_jct_switch[2], nplc, rampdown_dwell, temperature, partial_target_resistance, dwell_rampback_percent);
+		fprintf(output, "DELAY (SEC) %.3f ; RAMP (V) %.4f ; MAX VOLT (V) %.2f ; RAMP RESISTANCE TOLERANCE (low R) (float %%) %.3f ; RAMP RESISTANCE TOLERANCE (low-med R) (float %%) %.3f ; RAMP RESISTANCE TOLERANCE (med-high R) (float %%) %.3f ; RAMP RESISTANCE TOLERANCE (high R) (float %%) %.3f ; TARGET RESISTANCE (Ohms) %.9f ; RAMP DOWN (V) %.3f ; NUM CONSEC % HITS (low R) %i ; NUM CONSEC % HITS (low-med R) %i ;  NUM CONSEC % HITS (med-high R) %i ; NUM CONSEC % HITS (high R) %i ; NUM CONSEC NDR (low R) %i ; NUM CONSEC NDR (low-med R) %i ; NUM CONSEC NDR (med-high R) %i ; NUM CONSEC NDR (high R) %i ; NUM CONSEC DELTAR (low R) %i ; NUM CONSEC DELTAR (low-med R) %i ; NUM CONSEC DELTAR (med-high R) %i ; NUM CONSEC DELTAR (high R) %i ; DELTA TOL (low R) %.3f ; DELTA TOL (low-med R) %.3f ; DELTA TOL (med-high R) %.3f ; DELTA TOL(high R) %.3f ; LOW/LOW-MED SWITCH RESISTANCE (ohms) %.9f ; LOW-MED/MED-HIGH SWITCH RESISTANCE (ohms) %.9f ; MED-HIGH/HIGH SWITCH RESISTANCE (ohms) %.9f ;  INTEGRATION TIME (PLC) %i ; RAMPDOWN DWELL (msec/mV) %.4i ; TEMPERATURE (K) %.4f ; partial_target_resistance (ohms) %0.9f ; dwell_rampback_percent %0.3f\n ", delay, volt_ramp, volt_stop, bench_percent_tols[0], bench_percent_tols[1], bench_percent_tols[2], bench_percent_tols[3], target_resistance, volt_down, n_percent_trigger[0], n_percent_trigger[1], n_percent_trigger[2], n_percent_trigger[3], n_ndr_trigger[0], n_ndr_trigger[1], n_ndr_trigger[2], n_ndr_trigger[3], n_delta_trigger[0], n_delta_trigger[1], n_delta_trigger[2], n_delta_trigger[3], delta_tols[0], delta_tols[1], delta_tols[2], delta_tols[3], res_jct_switch[0], res_jct_switch[1], res_jct_switch[2], nplc, rampdown_dwell, temperature, partial_target_resistance, dwell_rampback_percent);
 		fprintf(output, "voltage,current,resistance,volt_range,curr_range\n");
 		fflush(output);
 
@@ -748,6 +748,7 @@ void K2400::UpdateTolerances(){
 	n_percent = n_percent_trigger[3];
 	n_ndr = n_ndr_trigger[3];
 	n_delta = n_delta_trigger[3];
+	delta_tol = delta_tols[3];
 
 	for (int k = 3; k > 0; --k){
 		if (rjct < res_jct_switch[k]){
@@ -755,6 +756,7 @@ void K2400::UpdateTolerances(){
 			n_percent = n_percent_trigger[k-1];
 			n_ndr = n_ndr_trigger[k-1];
 			n_delta = n_delta_trigger[k-1];
+			delta_tol = delta_tols[k - 1];
 		}
 	}
 }
@@ -766,7 +768,7 @@ void K2400::UpdateCounters(int &counter_delta, int &counter_percent, int &counte
 	int highcount = 8;
 	if (counter >= highcount){
 		// increment if v/i metric gives us delta_res above target
-		if (delta_res > delta){
+		if (delta_res > delta_tol){
 			counter_delta = counter_delta + 1;
 			std::cout << "Delta(R) Counter is " << counter_delta << "\n";
 		}

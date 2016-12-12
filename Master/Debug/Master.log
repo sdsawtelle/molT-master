@@ -1,20 +1,7 @@
-﻿Build started 12/12/2016 7:45:48 AM.
+﻿Build started 12/12/2016 8:11:54 AM.
      1>Project "C:\Users\Sonya\Documents\Code_GitVC\Cpp\molT-master\Master\Master.vcxproj" on node 2 (Build target(s)).
      1>ClCompile:
          C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /I"C:\Users\Sonya\Documents\Code\Cpp\molT-master\Master" /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D WIN32 /D _CRT_SECURE_NO_WARNINGS /D _DEBUG /D _CONSOLE /D _LIB /D _MBCS /Gm /EHsc /RTC1 /MTd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt K2400.cpp main.cpp menu.cpp
-         menu.cpp
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\spa4156b.h(16): warning C4005: 'ARRAYSZ' : macro redefinition
-                 c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\switchbox.h(18) : see previous definition of 'ARRAYSZ'
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\spa4145b.h(15): warning C4005: 'ARRAYSZ' : macro redefinition
-                 c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\spa4156b.h(16) : see previous definition of 'ARRAYSZ'
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\spa4145b.h(21): warning C4005: 'PRIMARY_ADDR_OF_PNA_SPA' : macro redefinition
-                 c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\spa4156b.h(22) : see previous definition of 'PRIMARY_ADDR_OF_PNA_SPA'
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\menu.cpp(365): warning C4244: '=' : conversion from 'int' to 'float', possible loss of data
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\menu.cpp(455): warning C4244: '=' : conversion from 'int' to 'float', possible loss of data
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\menu.cpp(606): warning C4305: 'argument' : truncation from 'double' to 'float'
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\menu.cpp(614): warning C4244: '=' : conversion from 'int' to 'float', possible loss of data
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\menu.cpp(698): warning C4305: 'argument' : truncation from 'double' to 'float'
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\menu.cpp(756): warning C4305: 'argument' : truncation from 'double' to 'float'
          K2400.cpp
      1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(114): warning C4305: '=' : truncation from 'double' to 'float'
      1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(137): warning C4305: '=' : truncation from 'double' to 'float'
@@ -33,11 +20,10 @@
      1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(561): warning C4244: '=' : conversion from 'double' to 'float', possible loss of data
      1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(486): warning C4101: 'rangeI' : unreferenced local variable
      1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(485): warning C4101: 'rangeV' : unreferenced local variable
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(747): warning C4244: '=' : conversion from 'float' to 'int', possible loss of data
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(754): warning C4244: '=' : conversion from 'float' to 'int', possible loss of data
-     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(1054): warning C4018: '<' : signed/unsigned mismatch
+     1>c:\users\sonya\documents\code_gitvc\cpp\molt-master\master\k2400.cpp(1056): warning C4018: '<' : signed/unsigned mismatch
          Generating Code...
          Skipping... (no relevant changes detected)
+         menu.cpp
          main.cpp
        Link:
          C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Users\Sonya\Documents\Code_GitVC\Cpp\molT-master\Debug\Master.exe" /INCREMENTAL /NOLOGO "C:\Users\Sonya\Documents\Code_GitVC\Cpp\molT-master\Master\gpib-32.obj" libmat.lib libmex.lib libeng.lib libmx.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:\Users\Sonya\Documents\Code_GitVC\Cpp\molT-master\Debug\Master.pdb" /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\Users\Sonya\Documents\Code_GitVC\Cpp\molT-master\Debug\Master.lib" /MACHINE:X86 Debug\DMM.obj
@@ -48,14 +34,9 @@
          Debug\SPA4145B.obj
          Debug\SPA4156B.obj
          Debug\Switchbox.obj
-     1>Switchbox.obj : warning LNK4099: PDB 'vc120.pdb' was not found with 'Switchbox.obj' or at 'C:\Users\Sonya\Documents\Code_GitVC\Cpp\molT-master\Debug\vc120.pdb'; linking object as if no debug info
-     1>SPA4156B.obj : warning LNK4099: PDB 'vc120.pdb' was not found with 'SPA4156B.obj' or at 'C:\Users\Sonya\Documents\Code_GitVC\Cpp\molT-master\Debug\vc120.pdb'; linking object as if no debug info
-     1>SPA4145B.obj : warning LNK4099: PDB 'vc120.pdb' was not found with 'SPA4145B.obj' or at 'C:\Users\Sonya\Documents\Code_GitVC\Cpp\molT-master\Debug\vc120.pdb'; linking object as if no debug info
-     1>graph.obj : warning LNK4099: PDB 'vc120.pdb' was not found with 'graph.obj' or at 'C:\Users\Sonya\Documents\Code_GitVC\Cpp\molT-master\Debug\vc120.pdb'; linking object as if no debug info
-     1>DMM.obj : warning LNK4099: PDB 'vc120.pdb' was not found with 'DMM.obj' or at 'C:\Users\Sonya\Documents\Code_GitVC\Cpp\molT-master\Debug\vc120.pdb'; linking object as if no debug info
          Master.vcxproj -> C:\Users\Sonya\Documents\Code_GitVC\Cpp\molT-master\Debug\Master.exe
      1>Done Building Project "C:\Users\Sonya\Documents\Code_GitVC\Cpp\molT-master\Master\Master.vcxproj" (Build target(s)).
 
 Build succeeded.
 
-Time Elapsed 00:00:15.31
+Time Elapsed 00:00:04.80

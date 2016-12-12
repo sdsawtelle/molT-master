@@ -140,7 +140,6 @@ void menu::menu_start(K2400 keithley, SPA4156B SPA, Switchbox switchbox){
 		case 11:{	
 				   // Execute EM ON A GROUP of devices\n";
 				   int emType = 0; // normal EM
-				   keithley.setParamsEM_fromfile(emType); // sets the EM parameters
 				   switchbox.getPorts(ymflag, outputs); // reads in all the pad specs and mark devices to be tested
 				   keithley.setParamsEM_fromfile(emType); // sets the EM parameters
 				   keithley.initializeEM(emType); //set ranges, integration time, delay and turn OUTPUT ON at 0 V

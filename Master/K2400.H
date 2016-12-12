@@ -33,24 +33,13 @@ public:
 	void setParamsEM_fromfile(int emType); // set EM parameters from a user-specified file
 	void initializeEM(int emType);  // initialize integration, range, delay and turn OUTPUT ON
 	float WrapEM(int emType, int devnum, FILE* outputs[36], Switchbox switchbox); // write headers and execute EM on a single device
-
 	float temperature; //temperature we are breaking wire at
-
-
-
-	void setParamsSweep(int* useEMV);
-	void initializeSweep();
-	void setParamsDwell();
-	float setParamsPulse();
-	void display_parameters();
-	float healSingle(int devnum, FILE* outputs[36]);
-	float sweepSingle(int devnum, FILE* outputs[36], float Vstart = -1.0);
-	float dwellSingle(int devnum, FILE* outputs[36], float dwellV);
-
 
 	void setGateVoltage(float Vgate);
 	void holdGateVoltage();
 	void holdDEPVoltage(float voltage, float holdTime);
+
+	void display_parameters();
 	void Spawn(int pick_program, std::string emailAddress); // i will be the parameter that chooses which program to Spawn!
 	void SendMail(std::string emailAddress);
 
@@ -75,12 +64,14 @@ private:
 	int rampType; //determines what events we look at for triggering ramp back
 
 	float bench_percent_tols[4]; //possible values of "tol" for R>R_bench*(1+tol) events (present value depends on Rjct) 
+	float delta_tols[4]; // possible values of "delta" delta(R) > delta event counter
 	int n_percent_trigger[4];  //possible number of consecutive R > R_bench*(1+tol) events to trigger ramp down  (present value depends on Rjct)
 	int n_ndr_trigger[4]; //possible number consecutive NDR events to trigger rampdown (present value depends on Rjct)
 	int n_delta_trigger[4]; //possible number consecutive delta(R) > delta events to trigger ramp down (present value depends on Rjct)
 	float res_jct_switch[4]; // Rjct at which to switch from between the possible values in the above arrays (e.g. Rjct < res_switch[0] means use n_ndr_trigger[0])
 
-	int bench_tol; //present value of "tol" for R>R_bench*(1+tol) and R > (Rjct + R_avg_series)*(1+tol) events
+	float bench_tol; //present value of "tol" for R>R_bench*(1+tol) and R > (Rjct + R_avg_series)*(1+tol) events
+	float delta_tol; //present value of "delta" for delta(R) > delta
 	int n_percent; //present number of consecutive R > R_bench*(1+tol) events to trigger ramp down
 	int n_ndr; //present number consecutive NDR events to trigger rampdown
 	int n_delta; //present number consecutive delta(R) > delta events to trigger ramp down
@@ -96,6 +87,7 @@ private:
 
 	float DoEM(FILE* data, FILE* reading, FILE* output, int devnum, Switchbox switchbox);
 	float DoConstVoltEM(FILE* data, FILE* reading, FILE* output, int devnum, Switchbox switchbox);
+	void GetReading(char* buffer, std::string &temporary, FILE* output, FILE* log_keithley);
 	float CalcResTimely(FILE* reading_log_keithley, FILE* output);
 	float CalcMetrics(float *diffres, float *delta_res, float *old_resistance, float &voltage_read, float &current_read, FILE* reading_log_keithley, FILE* output);
 	void CalcBenchmark(int &counter);
@@ -123,46 +115,6 @@ private:
 	float determine_current_range(float meas_curr); //optimal range for present measure current
 	int set_current_range(float range_curr); //set the range
 	int switch_current_range(Switchbox switchbox, int devnum, float range_curr); //wrapper for setting the range that opens/closes switchbox connection
-
-
-
-
-
-
-
-
-	float resistance_tolerance_defaults[4];
-	float resistance_tolerance_high;
-
-	float delta;  // delta_resistance that will trigger a ramp back.
-	int delta_counts;
-	int ndr_counts;
-	float avg_rs;
-
-	int ntrigger_high;  //length of consecutive string to trigger ramp down
-	int nnegres_high;  //# consecutive NDR to trigger rampdown
-	
-	float res_switch[4]; // resistance at which to switch from using low-R regime parameters to high-R regime parameters
-
-	float volt_ramp_KS; //voltage ramp
-	float volt_start_KS;
-	float volt_stop_KS;  // voltage stop
-	float target_resistance_KS; 
-
-
-
-	float DoSweep(FILE* data, FILE* reading, FILE* output, float delay);
-	float DoDwell(FILE* data, FILE* reading, FILE* output, float delay, float dwellV);
-	void GetReading(char* buffer, std::string &temporary, FILE* output, FILE* log_keithley);
-
-	void KeepTrackIndicators(int &res_consecutive, int &targ_res_consecutive, int &neg_res_consecutive, int &bench_res_consecutive, float &resistance_benchmark, float &resistance_timely, float resistance_initial, float &diffres, float target_resistance, int &counter);
-	
-
-	float GetResistance(float *diffres, float *old_resistance, float &voltage, float &resistance, FILE* stream, FILE* output, int counter);
-
-	bool CheckRampDown(float resistance_timely, float resistance_initial, int &res_consecutive, int &bench_res_consecutive, int &neg_res_consecutive);
-
-	bool GotTargetResistance(float &resistance_timely, int &targ_res_consecutive, float &volt_stop, float &voltage);
 };
 
 #endif // K2400_H

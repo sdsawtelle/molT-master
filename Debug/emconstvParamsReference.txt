@@ -7,6 +7,7 @@ res_jct_switch (array of 3 values)
 n_percent_trigger (array of 4 values)
 bench_percent_tols (array of 4 values)
 n_ndr_trigger (array of 4 values)
+delta_tols (array of 4 values)
 n_delta_trigger (array of 4 values)
 partial_target_resistance
 dwell_rampback_percent
