@@ -19,10 +19,10 @@ public:
 	std::string emailAddress;
 	std::string ft_ID;
 	void SendMail(std::string emailAddress);
-	void test();
 protected:
 private:
 	void executeEM(int emType, K2400 keithley, SPA4156B SPA, Switchbox switchbox, FILE* outputs[36]);
+	void executeEMandIV(int emType, SPA4156B SPA, Switchbox switchbox, K2400 keithley);
 
 	void executeYield(SPA4156B SPA, Switchbox switchbox, FILE* outputs[36]);
 	float executeGapYield(int devnum, SPA4156B SPA, Switchbox switchbox);
@@ -38,19 +38,9 @@ private:
 	void executeIETS(K2400 keithley, Switchbox switchbox, FILE* outputs[36], bool gateFlag);
 	void holdGateVoltage(K2400 keithley, Switchbox switchbox, FILE* outputs[36], int devnum);
 
-
-	void executeKeithleySweep(K2400 keithley, SPA4156B SPA, Switchbox switchbox, FILE* outputs[36]);
-	void executeKeithleyPulse(K2400 keithley, SPA4156B SPA, Switchbox switchbox, FILE* outputs[36]);
-	void executeKeithleyDwell(K2400 keithley, SPA4156B SPA, Switchbox switchbox, FILE* outputs[36]);
 	void executeEMandMonitor(int emType, K2400 keithley, SPA4156B SPA, Switchbox switchbox, FILE* outputs[36]);
 	void executeMonitor(SPA4156B SPA, Switchbox switchbox, FILE* outputs[36]);
 	void executeGatedMonitor(SPA4156B SPA, K2400 keithley, Switchbox switchbox, FILE* outputs[36]);
-
-	void executeSweepBreak(SPA4156B SPA, Switchbox switchbox, FILE* outputs[36]);
-	void executeEMandSweepBreakandGatedIV(int emType, SPA4156B SPA, Switchbox switchbox, K2400 keithley);
-
-	void executeEMandKeithleySweepandIV(int emType, SPA4156B SPA, Switchbox switchbox, K2400 keithley);
-	void executeEMandIV(int emType, SPA4156B SPA, Switchbox switchbox, K2400 keithley);
 	void closeFiles(int ymflag, int ndev, FILE* outputs[36], Switchbox switchbox);
 };
 
