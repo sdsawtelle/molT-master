@@ -187,8 +187,11 @@ int K2400::switch_current_range(Switchbox switchbox, int devnum, float range_cur
 ///////////////////// EM PREPARATION AND WRAPPER FUNCTIONS
 
 void K2400::setParamsEM_fromfile(int emType){
-	// EM WITH RAMP BACKS
-	if (emType == 0){
+	switch (emType){
+		// EM WITH RAMP BACKS
+	case 0: {
+		std::cout << "\n------------------ SET NORMAL EM PARAMETERS ----------------------\n";
+		std::cout << "(Please ensure v_start and the initial device resistance give I > 1 mA.)\n";
 		std::string file_in;
 		std::cout << "Filename containing Standard EM parameters? (no extension)\n";
 		std::cin >> file_in;
@@ -207,17 +210,21 @@ void K2400::setParamsEM_fromfile(int emType){
 		infile >> n_percent_trigger[0] >> trash >> n_percent_trigger[1] >> trash >> n_percent_trigger[2] >> trash >> n_percent_trigger[3];
 		infile >> bench_percent_tols[0] >> trash >> bench_percent_tols[1] >> trash >> bench_percent_tols[2] >> trash >> bench_percent_tols[3];
 		infile >> n_ndr_trigger[0] >> trash >> n_ndr_trigger[1] >> trash >> n_ndr_trigger[2] >> trash >> n_ndr_trigger[3];
+		infile >> delta_tols[0] >> trash >> delta_tols[1] >> trash >> delta_tols[2] >> trash >> delta_tols[3];
 		infile >> n_delta_trigger[0] >> trash >> n_delta_trigger[1] >> trash >> n_delta_trigger[2] >> trash >> n_delta_trigger[3];
 
-		std::cout << "What is ramp type that dictates conditions for ramping back? Options are: \n\n";
-		std::cout << "(1) Consecutive resistance change R > R_bench*(1+tol) and consecutive NDR.\n";
-		std::cout << "(2) Consecutive NORMED resistance change R > (Rjct + R_avgseries)*(1+tol) and consecutive NDR.\n";
-		std::cout << "(3) Consecutive delta(R) and consecutive NDR.\n";
+		std::cout << "What is ramp type that dictates conditions for ramping back? Options are: \n";
+		std::cout << "  (1) Consecutive resistance change R > R_bench*(1+tol) and consecutive NDR.\n";
+		std::cout << "  (2) Consecutive NORMED resistance change R > (Rjct + R_avgseries)*(1+tol) and consecutive NDR.\n";
+		std::cout << "  (3) Consecutive delta(R) and consecutive NDR.\n";
 		std::cin >> rampType;
+		std::cout << "----------------------------------------------------------------\n\n";
+		break;
 	}
-
-	// EM WITH DWELLING (RATE VS. POWER)
-	else if (emType == 2){
+		// EM WITH DWELLING (RATE VS. POWER)
+	case 1: {
+		std::cout << "\n---------------- SET CONSTANT-VOLTAGE EM PARAMETERS ----------------------\n";
+		std::cout << "(Please ensure v_start and the initial device resistance give I > 1 mA.)\n";
 		std::string file_in;
 		std::cout << "Filename containing Constant-Voltage EM parameters? (no extension)\n";
 		std::cin >> file_in;
@@ -236,16 +243,21 @@ void K2400::setParamsEM_fromfile(int emType){
 		infile >> n_percent_trigger[0] >> trash >> n_percent_trigger[1] >> trash >> n_percent_trigger[2] >> trash >> n_percent_trigger[3];
 		infile >> bench_percent_tols[0] >> trash >> bench_percent_tols[1] >> trash >> bench_percent_tols[2] >> trash >> bench_percent_tols[3];
 		infile >> n_ndr_trigger[0] >> trash >> n_ndr_trigger[1] >> trash >> n_ndr_trigger[2] >> trash >> n_ndr_trigger[3];
+		infile >> delta_tols[0] >> trash >> delta_tols[1] >> trash >> delta_tols[2] >> trash >> delta_tols[3];
 		infile >> n_delta_trigger[0] >> trash >> n_delta_trigger[1] >> trash >> n_delta_trigger[2] >> trash >> n_delta_trigger[3];
 		infile >> partial_target_resistance >> dwell_rampback_percent;
 
-		std::cout << "What is ramp type that dictates conditions for ramping back? Options are: \n\n";
-		std::cout << "(1) Consecutive resistance change R > R_bench*(1+tol) and consecutive NDR.\n";
-		std::cout << "(2) Consecutive NORMED resistance change R > (Rjct + R_avgseries)*(1+tol) and consecutive NDR.\n";
-		std::cout << "(3) Consecutive delta(R) and consecutive NDR.\n";
+		std::cout << "What is ramp type that dictates conditions for ramping back?\n";
+		std::cout << "  (1) Consecutive resistance change R > R_bench*(1+tol) and consecutive NDR.\n";
+		std::cout << "  (2) Consecutive NORMED resistance change R > (Rjct + R_avgseries)*(1+tol) and consecutive NDR.\n";
+		std::cout << "  (3) Consecutive delta(R) and consecutive NDR.\n";
 		std::cin >> rampType;
+		std::cout << "---------------------------------------------------------------\n\n";
+		break;
 	}
-
+	default:
+		break;
+	}
 	// adding this in in the hopes that it fixes the bizarre problem of the EM algorithm writing four columns of data...
 	configure();
 
@@ -349,6 +361,11 @@ float K2400::DoEM(FILE* log_keithley, FILE* reading_log_keithley, FILE* output, 
 	float rangeV; // keithley's V range
 	float rangeI; // keithley's I range
 	
+
+	std::cout << "=======================================================================\n";
+	std::cout << "Press the 'F12' key to interrupt active EM...\n";
+	std::cout << "=======================================================================\n";
+
 	// Equilibrate device and calculate average initial res over first 8 voltage steps
 	float voltage_write = volt_start - volt_ramp; //since we increase the voltage before measurement!
 	sprintf(buffer, ":SOUR:VOLT %f\n", voltage_write);
@@ -356,13 +373,8 @@ float K2400::DoEM(FILE* log_keithley, FILE* reading_log_keithley, FILE* output, 
 	resistance_timely = 0; // R measured on most recent V step. why is this an attribute of keithley?
 	voltage_write = CalcInitialRes(voltage_write, log_keithley, reading_log_keithley, output);
 
-
-	std::cout << "=======================================================================\n";
-	std::cout << "Press the 'F12' key to interrupt active EM...\n";
-	std::cout << "=======================================================================\n";
-
-	//execute loop until we get required resistance increase or F12 interrupt
-	while ((resistance_timely <= target_resistance + initial_res) && !GetAsyncKeyState(VK_F12)){
+	//loop until we get required resistance increase or F12 interrupt or exceed max voltage
+	while ((resistance_timely <= target_resistance + initial_res) && voltage_write < volt_stop && !GetAsyncKeyState(VK_F12)){
 
 		// Set the next voltage point and get a reading
 		voltage_write += volt_ramp;
@@ -432,6 +444,7 @@ float K2400::DoEM(FILE* log_keithley, FILE* reading_log_keithley, FILE* output, 
 
 		// Check for a ramp back based on the user-set ramp-back-condition type. Execute ramp back with range change as needed.
 		if (CheckRampBack(counter_delta, counter_percent, counter_ndr, counter_normed_percent)){
+			std::cout << "------------ RAMP BACK INIITIATED ------------\n";
 			voltage_write = 0.7*voltage_write;
 			counter_percent = 0;
 			counter_ndr = 0;
@@ -499,7 +512,7 @@ float K2400::DoConstVoltEM(FILE* log_keithley, FILE* reading_log_keithley, FILE*
 	std::cout << "=======================================================================\n";
 
 	//execute loop until we get required resistance *at end of ramp* increase or F12 interrupt
-	while ((resistance_timely <= partial_target_resistance + initial_res) && counter == 0 && !GetAsyncKeyState(VK_F12)){
+	while ((resistance_timely <= partial_target_resistance + initial_res) && counter == 0 && voltage_write < volt_stop &&!GetAsyncKeyState(VK_F12)){
 
 		// Set the next voltage point and get a reading
 		voltage_write += volt_ramp;
@@ -524,6 +537,7 @@ float K2400::DoConstVoltEM(FILE* log_keithley, FILE* reading_log_keithley, FILE*
 
 		// Check for a ramp back based on the user-set ramp-back-condition type. Execute ramp back with range change as needed.
 		if (CheckRampBack(counter_delta, counter_percent, counter_ndr, counter_normed_percent)){
+			std::cout << "------------ RAMP BACK INIITIATED ------------\n";
 			voltage_write = 0.7*voltage_write;
 			counter_percent = 0;
 			counter_ndr = 0;
@@ -735,6 +749,9 @@ float K2400::CalcInitialRes(float at_voltage, FILE* log_keithley, FILE* reading_
 		if (counter >= lowcount){
 			initial_res = (initial_res*(counter - lowcount) + resistance_timely) / (counter - lowcount + 1);
 		}
+		if (counter == highcount){
+			std::cout << "Initial Device Resistance is set to " << initial_res << " ohms.\n";
+		}
 	}
 
 	return at_voltage;
@@ -777,7 +794,7 @@ void K2400::UpdateCounters(int &counter_delta, int &counter_percent, int &counte
 		// increment if v/i metric gives us R > Rbench*(1+tol)
 		if (resistance_timely > benchmark_resistance*(1+bench_tol)){
 			counter_percent = counter_percent + 1;
-			std::cout << "Percentage Increase Counter is " << counter_percent << "\n";
+			std::cout << "% Bench Counter is " << counter_percent << "\n";
 		}
 		else counter_percent = 0;
 
@@ -786,7 +803,7 @@ void K2400::UpdateCounters(int &counter_delta, int &counter_percent, int &counte
 		float normed_res = resistance_timely - initial_res + avg_series_res;
 		if (normed_res > (normed_bench)*(1 + bench_tol)){
 			counter_normed_percent = counter_normed_percent + 1;
-			std::cout << "Series-R Normed Percentage Increase Counter is " << counter_percent << "\n";
+			std::cout << "Normed % Bench Counter is " << counter_percent << "\n";
 		}
 		else counter_normed_percent = 0;
 

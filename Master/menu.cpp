@@ -39,21 +39,16 @@ void menu::menu_start(K2400 keithley, SPA4156B SPA, Switchbox switchbox){
 		std::cout << "   (1)  SHORT ALL devices (S and D pads) to Shorting Cap (04)\n";
 		std::cout << "   (2)  OPEN ALL possible routes (0101:1028) \n\n" ;
 		std::cout << "   (3)  Perform NANOWIRE SAMPLING YIELD measurements on a group of devices\n";
-
-		//std::cout << "   (4)  Execute IV SWEEP OF THE GATELINE for the first listed device \n\n";	
+		//std::cout << "   (4)  Execute IV SWEEP OF THE GATELINE for the first listed device \n";	
 		//std::cout << "   (5)  Perform GATE LEAKAGE SAMPLING YIELD measurements on a group of devices\n";
 		//std::cout << "   (6)  Perform GATE LEAKAGE SWEEPS (IG) measurements on a group of devices\n";
-
 		std::cout << "   (7)  Take IV SWEEPS of a group of devices\n";
 		//std::cout << "   (8)  Take GATED IV SWEEPS (OPTIONALLY WITH LEAKAGE) of a group of devices \n";
-
 		//std::cout << "   (9)  Connect a device for IETS (OPTIONALLY GATED)\n";
-		//std::cout << "   (10)  Hold DEP VOLTAGE across all devices\n\n";
-
-		std::cout << "   (11)  Execute EM ON A GROUP of devices \n";
-		std::cout << "	 (12)  Execute CONSTANT VOLTAGE EM (Rate vs. Power) on a group of devices. \n\n";
+		//std::cout << "   (10)  Hold DEP VOLTAGE across all devices\n";
+		std::cout << "   (11)  Execute EM ON A GROUP of devices\n";
+		std::cout << "   (12)  Execute CONSTANT VOLTAGE EM on a group of devices\n\n";
 		//std::cout << "   (13)  Execute EM AND IVs on a group of devices\n\n";
-
 		//std::cout << "   (14)  Execute EM AND SELF-BREAK MONITORING on a group of devices\n";
 		//std::cout << "   (15)  Execute SELF-BREAK MONITORING of a group of devices\n\n";
 		//std::cout << "   (16)  Execute EM AND SELF-BREAK MONITORING (OPTIONALLY GATED) and switch devices after full breaking \n\n";
