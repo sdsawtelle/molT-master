@@ -59,6 +59,7 @@ void menu::menu_start(K2400 keithley, SPA4156B SPA, Switchbox switchbox){
 
 		int ymflag = 0; // is this a yield monitoring measurement? affects how switchbox.getPorts creates output files streams
 		FILE* outputs[36]; // this array will hold all the file pointers to the output files being written
+		std::string outputs_fnames[36]; // this array will hold all the names of the output files
 
 		switch (choice){
 		case 1:
@@ -72,7 +73,7 @@ void menu::menu_start(K2400 keithley, SPA4156B SPA, Switchbox switchbox){
 		case 3:{
 				   // Perform NANOWIRE YIELD measurements on a group of devices
 				   ymflag = 1; // single output file
-				   switchbox.getPorts(ymflag, outputs);
+				   switchbox.getPorts(ymflag, outputs, outputs_fnames);
 				   SPA.setParams(3);
 				   executeYield(SPA, switchbox, outputs);
 				   closeFiles(ymflag, switchbox.ndev, outputs, switchbox);
@@ -80,7 +81,7 @@ void menu::menu_start(K2400 keithley, SPA4156B SPA, Switchbox switchbox){
 		case 4:{
 				   // Take SWEEP OF GATELINE of first device\n";
 				   int outputfileflag = 1; //we just want one file, not one for each device
-				   switchbox.getPorts(outputfileflag, outputs);
+				   switchbox.getPorts(outputfileflag, outputs, outputs_fnames);
 				   SPA.setParams(2);
 				   executeGatelineSweep(SPA, switchbox, outputs);
 				   closeFiles(outputfileflag, switchbox.ndev, outputs, switchbox);
@@ -88,28 +89,28 @@ void menu::menu_start(K2400 keithley, SPA4156B SPA, Switchbox switchbox){
 		case 5:{
 				   // Perform GATE LEAKAGE SAMPLING YIELD measurements on a group of devices
 				   ymflag = 1; // single output file
-				   switchbox.getPorts(ymflag, outputs);  //now ymflag=1 will tell switchbox to just open one output file
+				   switchbox.getPorts(ymflag, outputs, outputs_fnames);  //now ymflag=1 will tell switchbox to just open one output file
 				   SPA.setParams(3);
 				   executeLeakageYield(SPA, switchbox, outputs);
 				   closeFiles(ymflag, switchbox.ndev, outputs, switchbox);
 				   break; }
 		case 6:{
 					// Take GATE LEAKAGE SWEEPS (IG) on a group of devices\n";
-					switchbox.getPorts(ymflag, outputs);
+				    switchbox.getPorts(ymflag, outputs, outputs_fnames);
 					SPA.setParams(2);
 					executeLeakageSweep(SPA, switchbox, outputs);
 					closeFiles(ymflag, switchbox.ndev, outputs, switchbox);
 					break; }
 		case 7:{
 					// Take IV SWEEPS on a group of devices\n";
-					switchbox.getPorts(ymflag, outputs);
+				    switchbox.getPorts(ymflag, outputs, outputs_fnames);
 					SPA.setParams(2);
 					executeIV(SPA, switchbox, outputs);
 					closeFiles(ymflag, switchbox.ndev, outputs, switchbox);
 					break; }
 		case 8:{
 					// Take GATED IV SWEEPS (OPTIONALLY WITH LEAKAGE) of a group of devices \n\n";
-					switchbox.getPorts(ymflag, outputs);
+				    switchbox.getPorts(ymflag, outputs, outputs_fnames);
 					int leakageFlag = 1;
 					std::cout << "Enter 1 for leakage data and 2 for NO leakage data.\n";
 					std::cin >> leakageFlag;
@@ -120,7 +121,7 @@ void menu::menu_start(K2400 keithley, SPA4156B SPA, Switchbox switchbox){
 		case 9:{
 					// Connect a device for IETS (OPTIONALLY GATED). \n";
 					ymflag = 2;
-					switchbox.getPorts(ymflag, outputs);
+					switchbox.getPorts(ymflag, outputs, outputs_fnames);
 					bool gateFlag = false;
 					std::cout << "Would you like to hold a gate voltage during IETS? (1 for yes, 0 for no)\n";
 					std::cin >> gateFlag;
@@ -129,26 +130,26 @@ void menu::menu_start(K2400 keithley, SPA4156B SPA, Switchbox switchbox){
 					break; }
 		case 10:{
 					// DEP on a group of devices
-					switchbox.getPorts(ymflag, outputs);
+					switchbox.getPorts(ymflag, outputs, outputs_fnames);
 					keithleyDEP(keithley, switchbox, outputs);
 					break; }
 		case 11:{	
 				   // Execute EM ON A GROUP of devices\n";
 				   int emType = 0; // normal EM
-				   switchbox.getPorts(ymflag, outputs); // reads in all the pad specs and mark devices to be tested
+				   switchbox.getPorts(ymflag, outputs, outputs_fnames); // reads in all the pad specs and mark devices to be tested
 				   keithley.setParamsEM_fromfile(emType); // sets the EM parameters
 				   keithley.initializeEM(emType); //set ranges, integration time, delay and turn OUTPUT ON at 0 V
-				   executeEM(emType, keithley, SPA, switchbox, outputs); // EM on each marked device 
+				   executeEM(emType, keithley, SPA, switchbox, outputs, outputs_fnames); // EM on each marked device 
 				   closeFiles(ymflag, switchbox.ndev, outputs, switchbox); // close all the output files
 				   //test();
 				   break;}
 		case 12:{
 					// Execute CONSTANT-VOLTAGE EM (RATE VS. POWER) ON A GROUP of devices\n";
 					int emType = 1; // constant-voltage EM (rate vs. power)
-					switchbox.getPorts(ymflag, outputs); // reads in all the pad specs and mark devices to be tested
+					switchbox.getPorts(ymflag, outputs, outputs_fnames); // reads in all the pad specs and mark devices to be tested
 					keithley.setParamsEM_fromfile(emType); // sets the EM parameters
 					keithley.initializeEM(emType); //set ranges, integration time, delay and turn OUTPUT ON at 0 V
-					executeEM(emType, keithley, SPA, switchbox, outputs); // EM on each marked device 
+					executeEM(emType, keithley, SPA, switchbox, outputs, outputs_fnames); // EM on each marked device 
 					closeFiles(ymflag, switchbox.ndev, outputs, switchbox); // close all the output files
 					break; }
 		case 13:{
@@ -159,16 +160,16 @@ void menu::menu_start(K2400 keithley, SPA4156B SPA, Switchbox switchbox){
 		case 14:{
 				   //Execute EM AND SELF-BREAK MONITORING on a group of devices\n";
 				   int emType = 0; // normal EM
-				   switchbox.getPorts(ymflag, outputs); // reads in all the pad specs and mark devices to be tested
+				   switchbox.getPorts(ymflag, outputs, outputs_fnames); // reads in all the pad specs and mark devices to be tested
 				   keithley.setParamsEM_fromfile(emType); // sets the EM parameters
 				   keithley.initializeEM(emType); //set ranges, integration time, delay and turn OUTPUT ON at 0 V
-				   executeEM(emType, keithley, SPA, switchbox, outputs); // EM on each marked device 
+				   executeEM(emType, keithley, SPA, switchbox, outputs, outputs_fnames); // EM on each marked device 
 				   executeMonitor(SPA, switchbox, outputs); //executes self-breaking monitoring until the user pressed 'Alt' key
 				   closeFiles(ymflag, switchbox.ndev, outputs, switchbox);
 				   break; }
 		case 15:{
 				   // Execute SELF-BREAK MONITORING of a group of devices\n\n";
-				   switchbox.getPorts(ymflag, outputs);
+					switchbox.getPorts(ymflag, outputs, outputs_fnames);
 				   SPA.setParams(1); // sets the sampling parameters for monitoring the devices (some user-input)
 				   executeMonitor(SPA, switchbox, outputs); //executes self-breaking monitoring until the user pressed 'Alt' key
 				   closeFiles(ymflag, switchbox.ndev, outputs, switchbox);
@@ -325,7 +326,7 @@ void menu::executeGatedIV(int leakageFlag, SPA4156B SPA, Switchbox switchbox, FI
 }
 
 
-void menu::executeEM(int emType, K2400 keithley, SPA4156B SPA, Switchbox switchbox, FILE* outputs[36]){
+void menu::executeEM(int emType, K2400 keithley, SPA4156B SPA, Switchbox switchbox, FILE* outputs[36], std::string outputs_fnames[36]){
 	// get a filename and open a file that will be used to write the summary info to
 	std::string file_summary;
 	std::cout << "What is the filename stem to use for the EM Outcome Summary? \n";
@@ -348,7 +349,7 @@ void menu::executeEM(int emType, K2400 keithley, SPA4156B SPA, Switchbox switchb
 		if (switchbox.portSpecs[4][devnum] == "y"){
 			switchbox.closeChan(devnum, "keithley"); // all channels except DUT remain shorted to bias port, DUT is connected to relevant inputs
 			t0 = Clock::now();
-			switchbox.exitSummary[0][devnum] = keithley.WrapEM(emType, devnum, outputs, switchbox); // writes IV data to output file. keithley will set his output to 0V after finishing EM run
+			switchbox.exitSummary[0][devnum] = keithley.WrapEM(emType, devnum, outputs, outputs_fnames, switchbox); // writes IV data to output file. keithley will set his output to 0V after finishing EM run
 			t1 = Clock::now();
 			Elapsed = std::chrono::duration_cast<minutes>(t1 - t0);
 			std::cout << "Device ID# " << switchbox.portSpecs[3][devnum].c_str() << " has completed active EM! \n";
@@ -358,6 +359,33 @@ void menu::executeEM(int emType, K2400 keithley, SPA4156B SPA, Switchbox switchb
 			switchbox.exitSummary[1][devnum] = executeGapYield(devnum, SPA, switchbox); // prints out R sampled at 100mV 
 			switchbox.exitSummary[2][devnum] = Elapsed.count();
 			std::cout << "---------------------------------------------------\n";
+
+			////////////////////// Do High-Voltage EM if needed //////////////////////////
+			if (switchbox.exitSummary[0][devnum] > 2){
+				std::cout << "=======================================================================\n";
+				std::cout << "High-Voltage EM is Needed. Restarting Now...\n";
+				std::cout << "=======================================================================\n";
+
+				// Change keithley to 21 V range
+				keithley.set_voltage_range(21.0);
+
+				switchbox.closeChan(devnum, "keithley"); // all channels except DUT remain shorted to bias port, DUT is connected to relevant inputs
+				t0 = Clock::now();
+				switchbox.exitSummary[0][devnum] = keithley.WrapEM(2, devnum, outputs, outputs_fnames, switchbox); // writes IV data to output file. keithley will set his output to 0V after finishing EM run
+				t1 = Clock::now();
+				Elapsed = std::chrono::duration_cast<minutes>(t1 - t0);
+				std::cout << "Device ID# " << switchbox.portSpecs[3][devnum].c_str() << " has completed active EM! \n";
+				std::cout << "Elapsed time of electromigration was " << Elapsed.count() << " minutes. \n";
+				std::cout << "Exit voltage of the electromigration was " << switchbox.exitSummary[0][devnum] << " V.\n";
+				switchbox.openChan(devnum, "keithley", 1); // get back to all output ports shorted to keithley ground
+				switchbox.exitSummary[1][devnum] = executeGapYield(devnum, SPA, switchbox); // prints out R sampled at 100mV 
+				switchbox.exitSummary[2][devnum] = Elapsed.count();
+				std::cout << "---------------------------------------------------\n";
+
+				// Reset keithley to 2 V range
+				keithley.set_voltage_range(2.0);
+			}
+
 		}
 	}
 
@@ -366,7 +394,7 @@ void menu::executeEM(int emType, K2400 keithley, SPA4156B SPA, Switchbox switchb
 	char buffer[1024];
 	for (int devnum = 0; devnum < switchbox.ndev; devnum++){
 		if (switchbox.portSpecs[4][devnum] == "y"){
-			sprintf(buffer, "%s, %s_%s, EM, %.3f, %.3f, %.3f, %.1f\n", chip_ID.c_str(), ft_ID.c_str(), switchbox.portSpecs[3][devnum].c_str(), keithley.temperature, switchbox.exitSummary[0][devnum], switchbox.exitSummary[1][devnum], switchbox.exitSummary[2][devnum]);
+			sprintf(buffer, "%s, %s_%s, EM, %.3f, %.3f, %.3f, %i\n", chip_ID.c_str(), ft_ID.c_str(), switchbox.portSpecs[3][devnum].c_str(), keithley.temperature, switchbox.exitSummary[0][devnum], switchbox.exitSummary[1][devnum], switchbox.exitSummary[2][devnum]);
 			fprintf(summary, buffer);
 		}
 	}
@@ -392,7 +420,8 @@ void menu::executeEMandIV(int emType, SPA4156B SPA, Switchbox switchbox, K2400 k
 	std::cout << "\n\n>>>> Please set EM parameters...\n\n";
 	int ymflag = 0; // is this a yield monitoring measurement? affects how switchbox.getPorts creates output files streams
 	FILE* outputsEM[36]; // this array will hold all the file pointers to the output files being written for EM
-	switchbox.getPorts(ymflag, outputsEM, file_in);
+	std::string outputs_fnames_EM[36];
+	switchbox.getPorts(ymflag, outputsEM, outputs_fnames_EM, file_in);
 
 
 	////let user set the KEITHLEy sweep breaking parameters
@@ -407,7 +436,8 @@ void menu::executeEMandIV(int emType, SPA4156B SPA, Switchbox switchbox, K2400 k
 	//let user set the SPA IV sweep parameters
 	std::cout << "\n\n>>>> Please set IV Sweep parameters...\n";
 	FILE* outputsIV[36]; // this array will hold all the file pointers to the output files being written for gated IV sweeps
-	switchbox.getPorts(ymflag, outputsIV, file_in);
+	std::string outputs_fnames_IV[36];
+	switchbox.getPorts(ymflag, outputsIV, outputs_fnames_IV, file_in);
 	float Vstart_IV, Vstop_IV, Vstep_IV;
 	SPA.setIVParamsLater(&Vstart_IV, &Vstop_IV, &Vstep_IV);  //asks user for IV parameters and stores them to set up SPA later.
 
@@ -442,7 +472,7 @@ void menu::executeEMandIV(int emType, SPA4156B SPA, Switchbox switchbox, K2400 k
 			keithley.initializeEM(0);
 			switchbox.closeChan(devnum, "keithley"); // all channels except DUT remain shorted to bias port, DUT is connected to relevant inputs
 			t0 = Clock::now();
-			switchbox.exitSummary[0][devnum] = keithley.WrapEM(emType, devnum, outputsEM, switchbox); // keithley.emSingle IV data to output file. keithley will set his output to 0V after finishing EM run and return the exit voltage
+			switchbox.exitSummary[0][devnum] = keithley.WrapEM(emType, devnum, outputsEM, outputs_fnames_EM, switchbox); // keithley.emSingle IV data to output file. keithley will set his output to 0V after finishing EM run and return the exit voltage
 			t1 = Clock::now();
 			switchbox.openChan(devnum, "keithley", 1); // get back to the state of all output ports shorted to keithley ground
 			Elapsed = std::chrono::duration_cast<minutes>(t1 - t0);
@@ -551,12 +581,14 @@ void menu::executeEMandMonitor(int emType, K2400 keithley, SPA4156B SPA, Switchb
 	std::cout << "\n\n>>>> Please set EM parameters...\n\n";
 	int ymflag = 0; // is this a yield monitoring measurement? affects how switchbox.getPorts creates output files streams
 	FILE* outputsEM[36]; // this array will hold all the file pointers to the output files being written for EM
-	switchbox.getPorts(ymflag, outputsEM, file_in);
+	std::string outputs_fnames_EM[36];
+	switchbox.getPorts(ymflag, outputsEM, outputs_fnames_EM, file_in);
 
 	//let user set the Self-Break Monitoring parameters
 	std::cout << "\n\n>>>> Please set Self-Break Monitoring parameters...\n";
 	FILE* outputsSB[36]; // this array will hold all the file pointers to the output files being written for gated IV sweeps
-	switchbox.getPorts(ymflag, outputsSB, file_in);
+	std::string outputs_fnames_SB[36];
+	switchbox.getPorts(ymflag, outputsSB, outputs_fnames_SB, file_in);
 	float voltage, Rdead, Vgate;
 	Vgate = 0;
 	SPA.setParams(1); // sets the sampling parameters for monitoring the devices after EM (some user-input)
@@ -601,7 +633,7 @@ void menu::executeEMandMonitor(int emType, K2400 keithley, SPA4156B SPA, Switchb
 			keithley.initializeEM(0);
 			switchbox.closeChan(devnum, "keithley"); // all channels except DUT remain shorted to bias port, DUT is connected to relevant inputs
 			t0 = Clock::now();
-			switchbox.exitSummary[0][devnum] = keithley.WrapEM(emType, devnum, outputsEM, switchbox); // keithley.emSingle IV data to output file. keithley will set his output to 0V after finishing EM run and return the exit voltage
+			switchbox.exitSummary[0][devnum] = keithley.WrapEM(emType, devnum, outputsEM, outputs_fnames_EM, switchbox); // keithley.emSingle IV data to output file. keithley will set his output to 0V after finishing EM run and return the exit voltage
 			t1 = Clock::now();
 			switchbox.openChan(devnum, "keithley", 1); // get back to the state of all output ports shorted to keithley ground
 			Elapsed = std::chrono::duration_cast<minutes>(t1 - t0);
@@ -811,3 +843,8 @@ void menu::SendMail(std::string emailAddress){
 	system("Ruby  mail.rb");
 }
 
+//void menu::test(){
+//	std::cout << "This is before I call gp.\n";
+//	system("gnuplot sc.gnu");
+//	std::cout << "This is after I call gp.\n";
+//}

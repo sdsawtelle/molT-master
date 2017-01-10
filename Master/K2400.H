@@ -32,12 +32,28 @@ public:
 	int configure();
 	void setParamsEM_fromfile(int emType); // set EM parameters from a user-specified file
 	void initializeEM(int emType);  // initialize integration, range, delay and turn OUTPUT ON
-	float WrapEM(int emType, int devnum, FILE* outputs[36], Switchbox switchbox); // write headers and execute EM on a single device
+	float WrapEM(int emType, int devnum, FILE* outputs[36], std::string outputs_fnames[36], Switchbox switchbox); // write headers and execute EM on a single device
 	float temperature; //temperature we are breaking wire at
 
 	void setGateVoltage(float Vgate);
 	void holdGateVoltage();
 	void holdDEPVoltage(float voltage, float holdTime);
+
+
+	// ---------------------------------------------------------------------------------------------------------
+	// --------------------------------------- RANGE HANDLING -----------------------------------
+	// ---------------------------------------------------------------------------------------------------------
+	float present_volt_range; //range it is present on
+	float determine_voltage_range(float src_volt); //optimal range for present sourced voltage
+	int set_voltage_range(float range_volt); //set the range
+	int switch_voltage_range(Switchbox switchbox, int devnum, float range_volt); //wrapper for setting the range that opens/closes switchbox connection
+
+	float present_curr_range; //range it is presently on
+	float determine_current_range(float meas_curr); //optimal range for present measure current
+	int set_current_range(float range_curr); //set the range
+	int switch_current_range(Switchbox switchbox, int devnum, float range_curr); //wrapper for setting the range that opens/closes switchbox connection
+
+
 
 	void display_parameters();
 	void Spawn(int pick_program, std::string emailAddress); // i will be the parameter that chooses which program to Spawn!
@@ -86,7 +102,9 @@ private:
 
 
 	float DoEM(FILE* data, FILE* reading, FILE* output, int devnum, Switchbox switchbox);
+	float DoHighVoltEM(FILE* data, FILE* reading, FILE* output, int devnum, Switchbox switchbox);
 	float DoConstVoltEM(FILE* data, FILE* reading, FILE* output, int devnum, Switchbox switchbox);
+
 	void GetReading(char* buffer, std::string &temporary, FILE* output, FILE* log_keithley);
 	float CalcResTimely(FILE* reading_log_keithley, FILE* output);
 	float CalcMetrics(float *diffres, float *delta_res, float *old_resistance, float &voltage_read, float &current_read, FILE* reading_log_keithley, FILE* output);
@@ -102,19 +120,6 @@ private:
 	float dwell_rampback_percent;
 	float partial_target_resistance;
 
-
-	// ---------------------------------------------------------------------------------------------------------
-	// --------------------------------------- RANGE HANDLING -----------------------------------
-	// ---------------------------------------------------------------------------------------------------------
-	float present_volt_range; //range it is present on
-	float determine_voltage_range(float src_volt); //optimal range for present sourced voltage
-	int set_voltage_range(float range_volt); //set the range
-	int switch_voltage_range(Switchbox switchbox, int devnum, float range_volt); //wrapper for setting the range that opens/closes switchbox connection
-
-	float present_curr_range; //range it is presently on
-	float determine_current_range(float meas_curr); //optimal range for present measure current
-	int set_current_range(float range_curr); //set the range
-	int switch_current_range(Switchbox switchbox, int devnum, float range_curr); //wrapper for setting the range that opens/closes switchbox connection
 };
 
 #endif // K2400_H

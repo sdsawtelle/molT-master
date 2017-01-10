@@ -201,7 +201,7 @@ void Switchbox::getAllPorts(){
 }
 
 
-void Switchbox::getPorts(int outputfileFlag, FILE* outputs[36], std::string file_in){
+void Switchbox::getPorts(int outputfileFlag, FILE* outputs[36], std::string outputs_fnames[36], std::string file_in){
 	// get input file containg pad numbers for devices. 
 	// each device should be its own row in the text file, each pad should be a two digit number
 	// the format is ##,##,##,## where the first two are the source and drain pads, and the next two are the gateline pads
@@ -254,6 +254,10 @@ void Switchbox::getPorts(int outputfileFlag, FILE* outputs[36], std::string file
 				if (outputfileFlag == 0){
 					char filebuffer[1024] = "";
 					sprintf(filebuffer, "%s_%s_%s.txt", file_out.c_str(), ft_ID.c_str(), buffer2);
+					char filename[1024] = "";
+					sprintf(filename, "%s_%s_%s", file_out.c_str(), ft_ID.c_str(), buffer2);
+					std::string fname_str(filename);
+					outputs_fnames[i] = fname_str;
 					outputs[i] = fopen(filebuffer, "w+");
 					if (outputs[i] == NULL) { // check that fopen worked correctly
 						std::cout << "fopen has failed for the output file " << filebuffer << "\n";

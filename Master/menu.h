@@ -19,9 +19,12 @@ public:
 	std::string emailAddress;
 	std::string ft_ID;
 	void SendMail(std::string emailAddress);
+
+	void test();
+
 protected:
 private:
-	void executeEM(int emType, K2400 keithley, SPA4156B SPA, Switchbox switchbox, FILE* outputs[36]);
+	void executeEM(int emType, K2400 keithley, SPA4156B SPA, Switchbox switchbox, FILE* outputs[36], std::string outputs_fnames[36]);
 	void executeEMandIV(int emType, SPA4156B SPA, Switchbox switchbox, K2400 keithley);
 
 	void executeYield(SPA4156B SPA, Switchbox switchbox, FILE* outputs[36]);
