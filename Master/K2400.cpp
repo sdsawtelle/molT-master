@@ -421,7 +421,7 @@ float K2400::DoEM(FILE* log_keithley, FILE* reading_log_keithley, FILE* output, 
 		UpdateCounters(counter_delta, counter_percent, counter_ndr, counter_normed_percent, counter, diffres, delta_res);
 
 		// Check for whether we have the target resistance near beginning of a ramp, then we can exit
-		if (counter <= 80 && (resistance_timely >= target_resistance + initial_res)){
+		if ((counter == 25 && (resistance_timely >= target_resistance + initial_res)) || resistance_timely > 100000){
 			exitFlag = 1;
 		}
 
@@ -733,7 +733,7 @@ float K2400::DoHighVoltEM(FILE* log_keithley, FILE* reading_log_keithley, FILE* 
 		UpdateCounters(counter_delta, counter_percent, counter_ndr, counter_normed_percent, counter, diffres, delta_res);
 
 		// Check for whether we have the target resistance near beginning of a ramp, then we can exit
-		if (counter <= 80 && (resistance_timely >= target_resistance + initial_res)){
+		if ((counter == 25 && (resistance_timely >= target_resistance + initial_res)) || resistance_timely > 100000){
 			exitFlag = 1;
 		}
 

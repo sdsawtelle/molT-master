@@ -386,6 +386,9 @@ void menu::executeEM(int emType, K2400 keithley, SPA4156B SPA, Switchbox switchb
 				keithley.set_voltage_range(2.0);
 			}
 
+			// Reset keithley to 10 mA range
+			keithley.set_current_range(0.01);
+
 		}
 	}
 
